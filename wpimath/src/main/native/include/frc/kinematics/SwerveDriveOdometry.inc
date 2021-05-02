@@ -41,4 +41,24 @@ const Pose2d& frc::SwerveDriveOdometry<NumModules>::UpdateWithTime(
 
   return m_pose;
 }
+
+template <size_t NumModules>
+template <typename... ModuleStates>
+const Pose2d& frc::SwerveDriveOdometry<NumModules>::UpdateWithTime(
+    units::second_t currentTime, ModuleStates&&... moduleStates) {
+  units::second_t deltaTime =
+      (m_previousTime >= 0_s) ? currentTime - m_previousTime : 0_s;
+  m_previousTime = currentTime;
+
+
+  auto [dx, dy, dtheta] = m_kinematics.ToChassisSpeeds(moduleStates...);
+  static_cast<void>(dtheta);
+
+  m_pose = m_pose.Exp({dx * deltaTime, dy * deltaTime, dtheta * deltaTime});
+
+  m_previousAngle = m_pose.Rotation();
+
+  return m_pose;
+}
+
 }  // namespace frc

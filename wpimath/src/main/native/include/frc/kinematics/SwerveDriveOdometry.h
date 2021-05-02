@@ -84,6 +84,25 @@ class SwerveDriveOdometry {
 
   /**
    * Updates the robot's position on the field using forward kinematics and
+   * integration of the pose over time. This method takes in the current time as
+   * a parameter to calculate period (difference between two timestamps). The
+   * period is used to calculate the change in distance from a velocity. This
+   * also takes in an angle parameter which is used instead of the
+   * angular rate that is calculated from forward kinematics.
+   *
+   * @param currentTime The current time.
+   * @param moduleStates The current state of all swerve modules. Please provide
+   *                     the states in the same order in which you instantiated
+   *                     your SwerveDriveKinematics.
+   *
+   * @return The new pose of the robot.
+   */
+  template <typename... ModuleStates>
+  const Pose2d& UpdateWithTime(units::second_t currentTime,
+                               ModuleStates&&... moduleStates);
+
+  /**
+   * Updates the robot's position on the field using forward kinematics and
    * integration of the pose over time. This method automatically calculates
    * the current time to calculate period (difference between two timestamps).
    * The period is used to calculate the change in distance from a velocity.
@@ -101,6 +120,26 @@ class SwerveDriveOdometry {
   const Pose2d& Update(const Rotation2d& gyroAngle,
                        ModuleStates&&... moduleStates) {
     return UpdateWithTime(wpi::Now() * 1.0e-6_s, gyroAngle, moduleStates...);
+  }
+
+
+  /**
+   * Updates the robot's position on the field using forward kinematics and
+   * integration of the pose over time. This method automatically calculates
+   * the current time to calculate period (difference between two timestamps).
+   * The period is used to calculate the change in distance from a velocity.
+   * This also takes in an angle parameter which is used instead of the
+   * angular rate that is calculated from forward kinematics.
+   *
+   * @param moduleStates The current state of all swerve modules. Please provide
+   *                     the states in the same order in which you instantiated
+   *                     your SwerveDriveKinematics.
+   *
+   * @return The new pose of the robot.
+   */
+  template <typename... ModuleStates>
+  const Pose2d& Update(ModuleStates&&... moduleStates) {
+    return UpdateWithTime(wpi::Now() * 1.0e-6_s, moduleStates...);
   }
 
  private:
