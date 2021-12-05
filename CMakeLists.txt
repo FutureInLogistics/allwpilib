@@ -125,11 +125,11 @@ FATAL: Cannot build examples with old commands disabled.
 ")
 endif()
 
-set( wpilib_dest wpilib)
-set( include_dest wpilib/include )
-set( main_lib_dest wpilib/lib )
-set( java_lib_dest wpilib/java )
-set( jni_lib_dest wpilib/jni )
+set( wpilib_dest )
+set( include_dest include )
+set( main_lib_dest lib )
+set( java_lib_dest java )
+set( jni_lib_dest jni )
 
 if (WITH_FLAT_INSTALL)
     set (wpilib_config_dir ${wpilib_dest})
