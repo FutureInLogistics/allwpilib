@@ -5,7 +5,7 @@
 #pragma once
 
 #include <frc/DigitalInput.h>
-#include <frc/PWMSparkMax.h>
+#include <frc/motorcontrol/PWMSparkMax.h>
 #include <frc2/command/SubsystemBase.h>
 
 /**
@@ -36,7 +36,7 @@ class Claw : public frc2::SubsystemBase {
    * Return true when the robot is grabbing an object hard enough
    * to trigger the limit switch.
    */
-  bool IsGripping();
+  bool IsGripping() const;
 
   /**
    * The log method puts interesting information to the SmartDashboard.

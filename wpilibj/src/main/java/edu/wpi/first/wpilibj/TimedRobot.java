@@ -19,7 +19,7 @@ import java.util.PriorityQueue;
  */
 public class TimedRobot extends IterativeRobotBase {
   @SuppressWarnings("MemberName")
-  class Callback implements Comparable<Callback> {
+  static class Callback implements Comparable<Callback> {
     public Runnable func;
     public double period;
     public double expirationTime;
@@ -41,6 +41,19 @@ public class TimedRobot extends IterativeRobotBase {
               + Math.floor((Timer.getFPGATimestamp() - startTimeSeconds) / this.period)
                   * this.period
               + this.period;
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (rhs instanceof Callback) {
+        return Double.compare(expirationTime, ((Callback) rhs).expirationTime) == 0;
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return Double.hashCode(expirationTime);
     }
 
     @Override
@@ -98,6 +111,7 @@ public class TimedRobot extends IterativeRobotBase {
     }
 
     // Tell the DS that the robot is ready to be enabled
+    System.out.println("********** Robot program startup complete **********");
     HAL.observeUserProgramStarting();
 
     // Loop forever, calling the appropriate mode-dependent function
@@ -135,11 +149,6 @@ public class TimedRobot extends IterativeRobotBase {
   @Override
   public void endCompetition() {
     NotifierJNI.stopNotifier(m_notifier);
-  }
-
-  /** Get time period between calls to Periodic() functions. */
-  public double getPeriod() {
-    return m_period;
   }
 
   /**

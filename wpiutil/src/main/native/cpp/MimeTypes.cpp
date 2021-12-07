@@ -4,13 +4,14 @@
 
 #include "wpi/MimeTypes.h"
 
+#include "wpi/StringExtras.h"
 #include "wpi/StringMap.h"
 
 namespace wpi {
 
 // derived partially from
 // https://github.com/DEGoodmanWilson/libmime/blob/stable/0.1.2/mime/mime.cpp
-StringRef MimeTypeFromPath(StringRef path) {
+std::string_view MimeTypeFromPath(std::string_view path) {
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
   static StringMap<const char*> mimeTypes{
       // text
@@ -52,12 +53,12 @@ StringRef MimeTypeFromPath(StringRef path) {
   static const char* defaultType = "application/octet-stream";
 
   auto pos = path.find_last_of("/");
-  if (pos != StringRef::npos) {
-    path = path.substr(pos + 1);
+  if (pos != std::string_view::npos) {
+    path = wpi::substr(path, pos + 1);
   }
   auto dot_pos = path.find_last_of(".");
-  if (dot_pos > 0 && dot_pos != StringRef::npos) {
-    auto type = mimeTypes.find(path.substr(dot_pos + 1));
+  if (dot_pos > 0 && dot_pos != std::string_view::npos) {
+    auto type = mimeTypes.find(wpi::substr(path, dot_pos + 1));
     if (type != mimeTypes.end()) {
       return type->getValue();
     }

@@ -7,8 +7,9 @@ package edu.wpi.first.wpilibj;
 import edu.wpi.first.hal.DigitalGlitchFilterJNI;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
-import edu.wpi.first.wpilibj.smartdashboard.SendableBuilder;
-import edu.wpi.first.wpilibj.smartdashboard.SendableRegistry;
+import edu.wpi.first.util.sendable.Sendable;
+import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.util.sendable.SendableRegistry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -20,7 +21,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class DigitalGlitchFilter implements Sendable, AutoCloseable {
   /** Configures the Digital Glitch Filter to its default settings. */
   public DigitalGlitchFilter() {
-    synchronized (m_mutex) {
+    m_mutex.lock();
+    try {
       int index = 0;
       while (m_filterAllocated[index] && index < m_filterAllocated.length) {
         index++;
@@ -31,6 +33,8 @@ public class DigitalGlitchFilter implements Sendable, AutoCloseable {
         HAL.report(tResourceType.kResourceType_DigitalGlitchFilter, m_channelIndex + 1, 0);
         SendableRegistry.addLW(this, "DigitalGlitchFilter", index);
       }
+    } finally {
+      m_mutex.unlock();
     }
   }
 
@@ -38,9 +42,13 @@ public class DigitalGlitchFilter implements Sendable, AutoCloseable {
   public void close() {
     SendableRegistry.remove(this);
     if (m_channelIndex >= 0) {
-      synchronized (m_mutex) {
+      m_mutex.lock();
+      try {
         m_filterAllocated[m_channelIndex] = false;
+      } finally {
+        m_mutex.unlock();
       }
+
       m_channelIndex = -1;
     }
   }
@@ -163,7 +171,6 @@ public class DigitalGlitchFilter implements Sendable, AutoCloseable {
   }
 
   @Override
-  @SuppressWarnings("PMD.UnusedFormalParameter")
   public void initSendable(SendableBuilder builder) {}
 
   private int m_channelIndex = -1;

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.wpi.first.wpilibj.simulation.SimHooks;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.CommandTestBase;
@@ -135,7 +136,6 @@ class ButtonTest extends CommandTestBase {
 
   @Test
   void runnableBindingTest() {
-
     InternalButton buttonWhenPressed = new InternalButton();
     InternalButton buttonWhileHeld = new InternalButton();
     InternalButton buttonWhenReleased = new InternalButton();
@@ -172,5 +172,27 @@ class ButtonTest extends CommandTestBase {
     assertTrue(button1.or(button2).get());
     assertFalse(button1.negate().get());
     assertTrue(button1.and(button2.negate()).get());
+  }
+
+  @Test
+  void debounceTest() {
+    CommandScheduler scheduler = CommandScheduler.getInstance();
+    MockCommandHolder commandHolder = new MockCommandHolder(true);
+    Command command = commandHolder.getMock();
+
+    InternalButton button = new InternalButton();
+    Trigger debounced = button.debounce(0.1);
+
+    debounced.whenActive(command);
+
+    button.setPressed(true);
+    scheduler.run();
+    verify(command, never()).schedule(true);
+
+    SimHooks.stepTiming(0.3);
+
+    button.setPressed(true);
+    scheduler.run();
+    verify(command).schedule(true);
   }
 }

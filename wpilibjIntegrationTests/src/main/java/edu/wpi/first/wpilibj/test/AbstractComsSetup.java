@@ -41,7 +41,7 @@ public abstract class AbstractComsSetup {
         // Set some implementations so that the static methods work properly
         HAL.initialize(500, 0);
         HAL.observeUserProgramStarting();
-        DriverStation.getInstance().getAlliance();
+        DriverStation.getAlliance();
 
         ds = new MockDS();
         ds.start();
@@ -56,7 +56,7 @@ public abstract class AbstractComsSetup {
 
       // Wait until the robot is enabled before starting the tests
       int enableCounter = 0;
-      while (!DriverStation.getInstance().isEnabled()) {
+      while (!DriverStation.isEnabled()) {
         if (enableCounter > 50) {
           // Robot did not enable properly after 5 seconds.
           // Force exit
@@ -164,7 +164,7 @@ public abstract class AbstractComsSetup {
       TestBench.out().println();
       // Wait until the robot is enabled before starting the next tests
       int enableCounter = 0;
-      while (!DriverStation.getInstance().isEnabled()) {
+      while (!DriverStation.isEnabled()) {
         try {
           Thread.sleep(100);
         } catch (InterruptedException ex) {
@@ -201,7 +201,7 @@ public abstract class AbstractComsSetup {
    * Provided as a replacement to lambda functions to allow for repeatable checks to see if a
    * correct state is reached.
    */
-  public abstract class BooleanCheck {
+  public abstract static class BooleanCheck {
     public BooleanCheck() {}
 
     /**

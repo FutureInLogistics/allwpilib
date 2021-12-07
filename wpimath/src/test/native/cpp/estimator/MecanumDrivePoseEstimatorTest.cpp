@@ -12,7 +12,7 @@
 #include "frc/trajectory/TrajectoryGenerator.h"
 #include "gtest/gtest.h"
 
-TEST(MecanumDrivePoseEstimatorTest, TestAccuracy) {
+TEST(MecanumDrivePoseEstimatorTest, Accuracy) {
   frc::MecanumDriveKinematics kinematics{
       frc::Translation2d{1_m, 1_m}, frc::Translation2d{1_m, -1_m},
       frc::Translation2d{-1_m, -1_m}, frc::Translation2d{-1_m, 1_m}};
@@ -74,7 +74,7 @@ TEST(MecanumDrivePoseEstimatorTest, TestAccuracy) {
         wheelSpeeds);
     double error = groundTruthState.pose.Translation()
                        .Distance(xhat.Translation())
-                       .to<double>();
+                       .value();
 
     if (error > maxError) {
       maxError = error;
@@ -84,7 +84,6 @@ TEST(MecanumDrivePoseEstimatorTest, TestAccuracy) {
     t += dt;
   }
 
-  EXPECT_LT(errorSum / (trajectory.TotalTime().to<double>() / dt.to<double>()),
-            0.2);
+  EXPECT_LT(errorSum / (trajectory.TotalTime().value() / dt.value()), 0.2);
   EXPECT_LT(maxError, 0.4);
 }

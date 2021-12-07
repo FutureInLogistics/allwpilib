@@ -6,8 +6,8 @@
 
 #include <atomic>
 
-#include "frc/smartdashboard/Sendable.h"
-#include "frc/smartdashboard/SendableHelper.h"
+#include <wpi/sendable/Sendable.h>
+#include <wpi/sendable/SendableHelper.h>
 
 namespace frc {
 
@@ -23,10 +23,10 @@ class Command;
  * It is encouraged that teams write a subclass of Trigger if they want to have
  * something unusual (for instance, if they want to react to the user holding
  * a button while the robot is reading a certain sensor input). For this, they
- * only have to write the {@link Trigger#Get()} method to get the full
- * functionality of the Trigger class.
+ * only have to write the Trigger::Get() method to get the full functionality of
+ * the Trigger class.
  */
-class Trigger : public Sendable, public SendableHelper<Trigger> {
+class Trigger : public wpi::Sendable, public wpi::SendableHelper<Trigger> {
  public:
   Trigger() = default;
   ~Trigger() override = default;
@@ -44,7 +44,7 @@ class Trigger : public Sendable, public SendableHelper<Trigger> {
   void CancelWhenActive(Command* command);
   void ToggleWhenActive(Command* command);
 
-  void InitSendable(SendableBuilder& builder) override;
+  void InitSendable(wpi::SendableBuilder& builder) override;
 
  private:
   std::atomic_bool m_sendablePressed{false};

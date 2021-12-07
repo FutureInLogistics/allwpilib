@@ -4,7 +4,7 @@
 
 #include "Drivetrain.h"
 
-#include <frc2/Timer.h>
+#include <frc/Timer.h>
 
 #include "ExampleGlobalMeasurementSensor.h"
 
@@ -18,15 +18,14 @@ frc::MecanumDriveWheelSpeeds Drivetrain::GetCurrentState() const {
 void Drivetrain::SetSpeeds(const frc::MecanumDriveWheelSpeeds& wheelSpeeds) {
   std::function<void(units::meters_per_second_t, const frc::Encoder&,
                      frc2::PIDController&, frc::PWMSparkMax&)>
-      calcAndSetSpeeds =
-          [&m_feedforward = m_feedforward](units::meters_per_second_t speed,
-                                           const auto& encoder,
-                                           auto& controller, auto& motor) {
-            auto feedforward = m_feedforward.Calculate(speed);
-            double output =
-                controller.Calculate(encoder.GetRate(), speed.to<double>());
-            motor.SetVoltage(units::volt_t{output} + feedforward);
-          };
+      calcAndSetSpeeds = [&m_feedforward = m_feedforward](
+                             units::meters_per_second_t speed,
+                             const auto& encoder, auto& controller,
+                             auto& motor) {
+        auto feedforward = m_feedforward.Calculate(speed);
+        double output = controller.Calculate(encoder.GetRate(), speed.value());
+        motor.SetVoltage(units::volt_t{output} + feedforward);
+      };
 
   calcAndSetSpeeds(wheelSpeeds.frontLeft, m_frontLeftEncoder,
                    m_frontLeftPIDController, m_frontLeftMotor);
@@ -58,5 +57,5 @@ void Drivetrain::UpdateOdometry() {
   m_poseEstimator.AddVisionMeasurement(
       ExampleGlobalMeasurementSensor::GetEstimatedGlobalPose(
           m_poseEstimator.GetEstimatedPosition()),
-      frc2::Timer::GetFPGATimestamp() - 0.3_s);
+      frc::Timer::GetFPGATimestamp() - 0.3_s);
 }

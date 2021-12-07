@@ -10,19 +10,24 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
-
-#include <wpi/StringRef.h>
 
 namespace halsimgui {
 
-class HALProvider : public glass::Provider<> {
+class HALProvider : private glass::Provider<> {
  public:
-  explicit HALProvider(const wpi::Twine& iniName) : Provider{iniName} {}
+  explicit HALProvider(glass::Storage& storage);
+
+  using Provider::GlobalInit;
+  using Provider::Register;
+  using Provider::RegisterModel;
+  using Provider::RegisterView;
+  using Provider::ShowDefault;
 
   void DisplayMenu() override;
 
-  glass::Model* GetModel(wpi::StringRef name);
+  glass::Model* GetModel(std::string_view name);
 
   /**
    * Returns true if outputs are disabled.
@@ -39,8 +44,6 @@ class HALProvider : public glass::Provider<> {
   static bool AreOutputsEnabled() { return !AreOutputsDisabled(); }
 
  private:
-  void Update() override;
-
   void Show(ViewEntry* entry, glass::Window* window) override;
 };
 

@@ -16,6 +16,8 @@ inline void CheckInit() {
   RunInitialize();
 }
 
+extern void InitializeCTREPCM();
+extern void InitializeREVPH();
 extern void InitializeAccelerometer();
 extern void InitializeAddressableLED();
 extern void InitializeAnalogAccumulator();
@@ -26,7 +28,6 @@ extern void InitializeAnalogOutput();
 extern void InitializeAnalogTrigger();
 extern void InitializeCAN();
 extern void InitializeCANAPI();
-extern void InitializeCompressor();
 extern void InitializeConstants();
 extern void InitializeCounter();
 extern void InitializeDigitalInternal();
@@ -41,14 +42,13 @@ extern void InitializeI2C();
 extern void InitializeInterrupts();
 extern void InitializeMain();
 extern void InitializeNotifier();
-extern void InitializePCMInternal();
-extern void InitializePDP();
+extern void InitializeCTREPDP();
+extern void InitializeREVPDH();
 extern void InitializePorts();
 extern void InitializePower();
 extern void InitializePWM();
 extern void InitializeRelay();
 extern void InitializeSerialPort();
-extern void InitializeSolenoid();
 extern void InitializeSPI();
 extern void InitializeThreads();
 }  // namespace hal::init

@@ -4,26 +4,20 @@
 
 #include "frc/simulation/DutyCycleEncoderSim.h"
 
-#include <wpi/SmallString.h>
-#include <wpi/raw_ostream.h>
-
 #include "frc/DutyCycleEncoder.h"
 #include "frc/simulation/SimDeviceSim.h"
 
 using namespace frc::sim;
 
 DutyCycleEncoderSim::DutyCycleEncoderSim(const frc::DutyCycleEncoder& encoder) {
-  wpi::SmallString<128> fullname;
-  wpi::raw_svector_ostream os(fullname);
-  os << "DutyCycle:DutyCycleEncoder" << '[' << encoder.GetSourceChannel()
-     << ']';
-  frc::sim::SimDeviceSim deviceSim{fullname.c_str()};
+  frc::sim::SimDeviceSim deviceSim{"DutyCycle:DutyCycleEncoder",
+                                   encoder.GetSourceChannel()};
   m_simPosition = deviceSim.GetDouble("position");
   m_simDistancePerRotation = deviceSim.GetDouble("distance_per_rot");
 }
 
 void DutyCycleEncoderSim::Set(units::turn_t turns) {
-  m_simPosition.Set(turns.to<double>());
+  m_simPosition.Set(turns.value());
 }
 
 void DutyCycleEncoderSim::SetDistance(double distance) {

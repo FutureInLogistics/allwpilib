@@ -24,6 +24,15 @@ ext {
                     srcDirs 'src/main/native/include', 'src/main/native/libuv/include', 'src/main/native/libuv/src'
                 }
             }
+            fmtlibCpp(CppSourceSet) {
+                source {
+                    srcDirs 'src/main/native/fmtlib/src'
+                    include '*.cpp'
+                }
+                exportedHeaders {
+                    srcDirs 'src/main/native/fmtlib/include'
+                }
+            }
             resourcesCpp(CppSourceSet) {
                 source {
                     srcDirs "$buildDir/generated/main/cpp", "$rootDir/shared/singlelib"
@@ -120,6 +129,16 @@ ext {
                         srcDirs 'src/main/native/include', 'src/main/native/libuv/include', 'src/main/native/libuv/src'
                     }
                 }
+                wpiutilmacOSCpp(CppSourceSet) {
+                    source {
+                        srcDirs 'src/main/native/macOS'
+                        include '**/*.cpp'
+                    }
+                    exportedHeaders {
+                        srcDirs 'src/main/native/include', 'src/main/native/cpp'
+                        include '**/*.h'
+                    }
+                }
             }
         } else {
             it.sources {
@@ -137,6 +156,16 @@ ext {
                     }
                     exportedHeaders {
                         srcDirs 'src/main/native/include', 'src/main/native/libuv/include', 'src/main/native/libuv/src'
+                    }
+                }
+                wpiutilLinuxCpp(CppSourceSet) {
+                    source {
+                        srcDirs 'src/main/native/linux'
+                        include '**/*.cpp'
+                    }
+                    exportedHeaders {
+                        srcDirs 'src/main/native/include', 'src/main/native/cpp', 'src/main/native/fmtlib/include'
+                        include '**/*.h'
                     }
                 }
             }
@@ -191,6 +220,9 @@ cppHeadersZip {
     from('src/main/native/libuv/include') {
         into '/'
     }
+    from('src/main/native/fmtlib/include') {
+        into '/'
+    }
 }
 
 model {
@@ -198,7 +230,7 @@ model {
         all {
             it.sources.each {
                 it.exportedHeaders {
-                    srcDirs 'src/main/native/include', 'src/main/native/libuv/include', 'src/main/native/libuv/src'
+                    srcDirs 'src/main/native/include', 'src/main/native/libuv/include', 'src/main/native/libuv/src', 'src/main/native/fmtlib/include'
                 }
             }
         }

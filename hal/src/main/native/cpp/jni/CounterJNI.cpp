@@ -11,6 +11,18 @@
 #include "hal/Counter.h"
 #include "hal/Errors.h"
 
+static_assert(HAL_Counter_Mode::HAL_Counter_kTwoPulse ==
+              edu_wpi_first_hal_CounterJNI_TWO_PULSE);
+
+static_assert(HAL_Counter_Mode::HAL_Counter_kSemiperiod ==
+              edu_wpi_first_hal_CounterJNI_SEMI_PERIOD);
+
+static_assert(HAL_Counter_Mode::HAL_Counter_kPulseLength ==
+              edu_wpi_first_hal_CounterJNI_PULSE_LENGTH);
+
+static_assert(HAL_Counter_Mode::HAL_Counter_kExternalDirection ==
+              edu_wpi_first_hal_CounterJNI_EXTERNAL_DIRECTION);
+
 using namespace hal;
 
 extern "C" {
@@ -119,12 +131,6 @@ Java_edu_wpi_first_hal_CounterJNI_setCounterDownSource
   HAL_SetCounterDownSource((HAL_CounterHandle)id,
                            (HAL_Handle)digitalSourceHandle,
                            (HAL_AnalogTriggerType)analogTriggerType, &status);
-  if (status == PARAMETER_OUT_OF_RANGE) {
-    ThrowIllegalArgumentException(env,
-                                  "Counter only supports DownSource in "
-                                  "TwoPulse and ExternalDirection modes.");
-    return;
-  }
   CheckStatus(env, status);
 }
 
@@ -240,10 +246,6 @@ Java_edu_wpi_first_hal_CounterJNI_setCounterSamplesToAverage
 {
   int32_t status = 0;
   HAL_SetCounterSamplesToAverage((HAL_CounterHandle)id, value, &status);
-  if (status == PARAMETER_OUT_OF_RANGE) {
-    ThrowBoundaryException(env, value, 1, 127);
-    return;
-  }
   CheckStatus(env, status);
 }
 

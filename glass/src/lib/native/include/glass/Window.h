@@ -6,15 +6,16 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include <imgui.h>
-#include <wpi/StringRef.h>
-#include <wpi/Twine.h>
 
 #include "glass/View.h"
 
 namespace glass {
+
+class Storage;
 
 /**
  * Managed window information.
@@ -22,12 +23,12 @@ namespace glass {
  */
 class Window {
  public:
-  Window() = default;
-  explicit Window(wpi::StringRef id) : m_id{id}, m_defaultName{id} {}
-
-  wpi::StringRef GetId() const { return m_id; }
-
   enum Visibility { kHide = 0, kShow, kDisabled };
+
+  Window(Storage& storage, std::string_view id,
+         Visibility defaultVisibility = kShow);
+
+  std::string_view GetId() const { return m_id; }
 
   bool HasView() { return static_cast<bool>(m_view); }
 
@@ -43,8 +44,8 @@ class Window {
 
   void SetFlags(ImGuiWindowFlags flags) { m_flags = flags; }
 
-  void SetName(const wpi::Twine& name) { m_name = name.str(); }
-  void SetDefaultName(const wpi::Twine& name) { m_defaultName = name.str(); }
+  void SetName(std::string_view name) { m_name = name; }
+  void SetDefaultName(std::string_view name) { m_defaultName = name; }
 
   /**
    * Normally windows provide a right-click popup menu on the title bar to
@@ -59,6 +60,13 @@ class Window {
    * @param visibility 0=hide, 1=show, 2=disabled (force-hide)
    */
   void SetVisibility(Visibility visibility);
+
+  /**
+   * Sets default visibility of window.
+   *
+   * @param visibility 0=hide, 1=show, 2=disabled (force-hide)
+   */
+  void SetDefaultVisibility(Visibility visibility);
 
   /**
    * Sets default position of window.
@@ -110,17 +118,16 @@ class Window {
    */
   void ScaleDefault(float scale);
 
-  void IniReadLine(const char* lineStr);
-  void IniWriteAll(const char* typeName, ImGuiTextBuffer* out_buf);
-
  private:
   std::string m_id;
-  std::string m_name;
+  std::string& m_name;
   std::string m_defaultName;
   std::unique_ptr<View> m_view;
   ImGuiWindowFlags m_flags = 0;
-  bool m_visible = true;
-  bool m_enabled = true;
+  bool& m_visible;
+  bool& m_enabled;
+  bool& m_defaultVisible;
+  bool& m_defaultEnabled;
   bool m_renamePopupEnabled = true;
   ImGuiCond m_posCond = 0;
   ImGuiCond m_sizeCond = 0;

@@ -11,7 +11,7 @@
 #include <units/time.h>
 #include <units/velocity.h>
 #include <units/voltage.h>
-#include <wpi/math>
+#include <wpi/numbers>
 
 #include "ExampleSmartMotorController.h"
 
@@ -43,7 +43,7 @@ class Robot : public frc::TimedRobot {
 
     // Send setpoint to offboard controller PID
     m_motor.SetSetpoint(ExampleSmartMotorController::PIDMode::kPosition,
-                        m_setpoint.position.to<double>(),
+                        m_setpoint.position.value(),
                         m_feedforward.Calculate(m_setpoint.velocity) / 12_V);
   }
 

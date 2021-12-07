@@ -4,7 +4,7 @@
 
 #include "Drivetrain.h"
 
-#include <frc2/Timer.h>
+#include <frc/Timer.h>
 
 #include "ExampleGlobalMeasurementSensor.h"
 
@@ -12,9 +12,9 @@ void Drivetrain::SetSpeeds(const frc::DifferentialDriveWheelSpeeds& speeds) {
   const auto leftFeedforward = m_feedforward.Calculate(speeds.left);
   const auto rightFeedforward = m_feedforward.Calculate(speeds.right);
   const double leftOutput = m_leftPIDController.Calculate(
-      m_leftEncoder.GetRate(), speeds.left.to<double>());
+      m_leftEncoder.GetRate(), speeds.left.value());
   const double rightOutput = m_rightPIDController.Calculate(
-      m_rightEncoder.GetRate(), speeds.right.to<double>());
+      m_rightEncoder.GetRate(), speeds.right.value());
 
   m_leftGroup.SetVoltage(units::volt_t{leftOutput} + leftFeedforward);
   m_rightGroup.SetVoltage(units::volt_t{rightOutput} + rightFeedforward);
@@ -38,5 +38,5 @@ void Drivetrain::UpdateOdometry() {
   m_poseEstimator.AddVisionMeasurement(
       ExampleGlobalMeasurementSensor::GetEstimatedGlobalPose(
           m_poseEstimator.GetEstimatedPosition()),
-      frc2::Timer::GetFPGATimestamp() - 0.3_s);
+      frc::Timer::GetFPGATimestamp() - 0.3_s);
 }

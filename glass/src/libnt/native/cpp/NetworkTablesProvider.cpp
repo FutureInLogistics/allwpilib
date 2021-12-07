@@ -6,33 +6,67 @@
 
 #include <algorithm>
 
+#include <fmt/format.h>
 #include <ntcore_cpp.h>
 #include <wpi/SmallString.h>
+#include <wpi/StringExtras.h>
 #include <wpigui.h>
+
+#include "glass/Storage.h"
 
 using namespace glass;
 
-NetworkTablesProvider::NetworkTablesProvider(const wpi::Twine& iniName)
-    : NetworkTablesProvider{iniName, nt::GetDefaultInstance()} {}
+NetworkTablesProvider::NetworkTablesProvider(Storage& storage)
+    : NetworkTablesProvider{storage, nt::GetDefaultInstance()} {}
 
-NetworkTablesProvider::NetworkTablesProvider(const wpi::Twine& iniName,
-                                             NT_Inst inst)
-    : Provider{iniName + "Window"}, m_nt{inst}, m_typeCache{iniName} {
-  m_nt.AddListener("", NT_NOTIFY_LOCAL | NT_NOTIFY_NEW | NT_NOTIFY_DELETE |
-                           NT_NOTIFY_IMMEDIATE);
-}
+NetworkTablesProvider::NetworkTablesProvider(Storage& storage, NT_Inst inst)
+    : Provider{storage.GetChild("windows")},
+      m_nt{inst},
+      m_typeCache{storage.GetChild("types")} {
+  storage.SetCustomApply([this] {
+    m_listener =
+        m_nt.AddListener("", NT_NOTIFY_LOCAL | NT_NOTIFY_NEW |
+                                 NT_NOTIFY_DELETE | NT_NOTIFY_IMMEDIATE);
+    for (auto&& childIt : m_storage.GetChildren()) {
+      auto id = childIt.key();
+      auto typePtr = m_typeCache.FindValue(id);
+      if (!typePtr || typePtr->type != Storage::Value::kString) {
+        continue;
+      }
 
-void NetworkTablesProvider::GlobalInit() {
-  Provider::GlobalInit();
-  wpi::gui::AddInit([this] { m_typeCache.Initialize(); });
+      // only handle ones where we have a builder
+      auto builderIt = m_typeMap.find(typePtr->stringVal);
+      if (builderIt == m_typeMap.end()) {
+        continue;
+      }
+
+      auto entry = GetOrCreateView(
+          builderIt->second,
+          nt::GetEntry(m_nt.GetInstance(), fmt::format("{}/.type", id)), id);
+      if (entry) {
+        Show(entry, nullptr);
+      }
+    }
+  });
+  storage.SetCustomClear([this, &storage] {
+    nt::RemoveEntryListener(m_listener);
+    m_listener = 0;
+    for (auto&& modelEntry : m_modelEntries) {
+      modelEntry->model.reset();
+    }
+    m_viewEntries.clear();
+    m_windows.clear();
+    m_typeCache.EraseAll();
+    storage.ClearValues();
+  });
 }
 
 void NetworkTablesProvider::DisplayMenu() {
-  wpi::SmallVector<wpi::StringRef, 6> path;
+  wpi::SmallVector<std::string_view, 6> path;
   wpi::SmallString<64> name;
   for (auto&& entry : m_viewEntries) {
     path.clear();
-    wpi::StringRef{entry->name}.split(path, '/', -1, false);
+    wpi::split(entry->name, path, '/', -1, false);
 
     bool fullDepth = true;
     int depth = 0;
@@ -69,12 +103,12 @@ void NetworkTablesProvider::Update() {
   // add/remove entries from NT changes
   for (auto&& event : m_nt.PollListener()) {
     // look for .type fields
-    wpi::StringRef eventName{event.name};
-    if (!eventName.endswith("/.type") || !event.value ||
+    std::string_view eventName{event.name};
+    if (!wpi::ends_with(eventName, "/.type") || !event.value ||
         !event.value->IsString()) {
       continue;
     }
-    auto tableName = eventName.drop_back(6);
+    auto tableName = wpi::drop_back(eventName, 6);
 
     // only handle ones where we have a builder
     auto builderIt = m_typeMap.find(event.value->GetString());
@@ -94,37 +128,12 @@ void NetworkTablesProvider::Update() {
     } else if (event.flags & NT_NOTIFY_NEW) {
       GetOrCreateView(builderIt->second, event.entry, tableName);
       // cache the type
-      m_typeCache[tableName].SetName(event.value->GetString());
-    }
-  }
-
-  // check for visible windows that need displays (typically this is due to
-  // file loading)
-  for (auto&& window : m_windows) {
-    if (!window->IsVisible() || window->HasView()) {
-      continue;
-    }
-    auto id = window->GetId();
-    auto typeIt = m_typeCache.find(id);
-    if (typeIt == m_typeCache.end()) {
-      continue;
-    }
-
-    // only handle ones where we have a builder
-    auto builderIt = m_typeMap.find(typeIt->second.GetName());
-    if (builderIt == m_typeMap.end()) {
-      continue;
-    }
-
-    auto entry = GetOrCreateView(
-        builderIt->second, nt::GetEntry(m_nt.GetInstance(), id + "/.type"), id);
-    if (entry) {
-      Show(entry, window.get());
+      m_typeCache.SetString(tableName, event.value->GetString());
     }
   }
 }
 
-void NetworkTablesProvider::Register(wpi::StringRef typeName,
+void NetworkTablesProvider::Register(std::string_view typeName,
                                      CreateModelFunc createModel,
                                      CreateViewFunc createView) {
   m_typeMap[typeName] = Builder{std::move(createModel), std::move(createView)};
@@ -148,14 +157,14 @@ void NetworkTablesProvider::Show(ViewEntry* entry, Window* window) {
 
   // the window might exist and we're just not associated to it yet
   if (!window) {
-    window = GetOrAddWindow(entry->name, true);
+    window = GetOrAddWindow(entry->name, true, Window::kHide);
   }
   if (!window) {
     return;
   }
-  if (wpi::StringRef{entry->name}.startswith("/SmartDashboard/")) {
-    window->SetDefaultName(wpi::StringRef{entry->name}.drop_front(16) +
-                           " (SmartDashboard)");
+  if (wpi::starts_with(entry->name, "/SmartDashboard/")) {
+    window->SetDefaultName(
+        fmt::format("{} (SmartDashboard)", wpi::drop_front(entry->name, 16)));
   }
   entry->window = window;
 
@@ -171,7 +180,7 @@ void NetworkTablesProvider::Show(ViewEntry* entry, Window* window) {
 }
 
 NetworkTablesProvider::ViewEntry* NetworkTablesProvider::GetOrCreateView(
-    const Builder& builder, NT_Entry typeEntry, wpi::StringRef name) {
+    const Builder& builder, NT_Entry typeEntry, std::string_view name) {
   // get view entry if it already exists
   auto viewIt = FindViewEntry(name);
   if (viewIt != m_viewEntries.end() && (*viewIt)->name == name) {

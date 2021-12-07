@@ -12,14 +12,12 @@ import org.junit.jupiter.api.Test;
 class CommandGroupErrorTest extends CommandTestBase {
   @Test
   void commandInMultipleGroupsTest() {
-
     MockCommandHolder command1Holder = new MockCommandHolder(true);
     Command command1 = command1Holder.getMock();
     MockCommandHolder command2Holder = new MockCommandHolder(true);
     Command command2 = command2Holder.getMock();
 
-    @SuppressWarnings("PMD.UnusedLocalVariable")
-    Command group = new ParallelCommandGroup(command1, command2);
+    new ParallelCommandGroup(command1, command2);
     assertThrows(
         IllegalArgumentException.class, () -> new ParallelCommandGroup(command1, command2));
   }
@@ -32,8 +30,7 @@ class CommandGroupErrorTest extends CommandTestBase {
       MockCommandHolder command2Holder = new MockCommandHolder(true);
       Command command2 = command2Holder.getMock();
 
-      @SuppressWarnings("PMD.UnusedLocalVariable")
-      Command group = new ParallelCommandGroup(command1, command2);
+      new ParallelCommandGroup(command1, command2);
 
       assertThrows(IllegalArgumentException.class, () -> scheduler.schedule(command1));
     }

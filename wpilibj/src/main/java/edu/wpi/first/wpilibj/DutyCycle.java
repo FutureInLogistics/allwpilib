@@ -7,8 +7,9 @@ package edu.wpi.first.wpilibj;
 import edu.wpi.first.hal.DutyCycleJNI;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
-import edu.wpi.first.wpilibj.smartdashboard.SendableBuilder;
-import edu.wpi.first.wpilibj.smartdashboard.SendableRegistry;
+import edu.wpi.first.util.sendable.Sendable;
+import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.util.sendable.SendableRegistry;
 
 /**
  * Class to read a duty cycle PWM input.
@@ -47,6 +48,7 @@ public class DutyCycle implements Sendable, AutoCloseable {
   /** Close the DutyCycle and free all resources. */
   @Override
   public void close() {
+    SendableRegistry.remove(this);
     DutyCycleJNI.free(m_handle);
   }
 

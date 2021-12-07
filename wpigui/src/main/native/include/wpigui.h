@@ -6,13 +6,9 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 
 #include <imgui.h>
-
-#if __has_include(<wpi/StringRef.h>)
-#include <wpi/StringRef.h>
-#define WPIGUI_HAS_STRINGREF
-#endif
 
 extern "C" struct GLFWwindow;
 
@@ -84,6 +80,36 @@ void AddEarlyExecute(std::function<void()> execute);
 void AddLateExecute(std::function<void()> execute);
 
 /**
+ * Customizes save/load behavior.
+ *
+ * By default, the integrated ImGui functions are used for this;
+ * ImGui::LoadIniSettingsFromDisk(io.IniFilename) is called at startup, and
+ * ImGui default automatic save file handling is used via io.IniFilename.
+ *
+ * Calling this function results in the load function being called at startup,
+ * io.IniFilename set to null (which disables ImGui's integrated file saving),
+ * and the save function being called when io.WantSaveIniSettings is true.
+ * The loadIni function should call ImGui::LoadIniSettingsFromMemory() to load
+ * ImGui save data, and the save function should call
+ * ImGui::SaveIniSettingsToMemory() to get ImGui save data.
+ *
+ * The load function is called PRIOR to AddInit() functions, and the loadIni
+ * function is called AFTER to AddInit() functions.  This allows initialize
+ * functions that use custom storage to handle the loaded values, and initialize
+ * functions that use INI storage to add hooks prior to the load INI occurring.
+ *
+ * This must be called prior to Initialize().
+ *
+ * @param load load function
+ * @param loadIni load INI function
+ * @param save save function; false is passed periodically, true is passed once
+ *             when the main loop is exiting
+ */
+void ConfigureCustomSaveSettings(std::function<void()> load,
+                                 std::function<void()> loadIni,
+                                 std::function<void(bool exiting)> save);
+
+/**
  * Gets GLFW window handle.
  */
 GLFWwindow* GetSystemWindow();
@@ -98,11 +124,10 @@ GLFWwindow* GetSystemWindow();
  */
 bool AddIcon(const unsigned char* data, int len);
 
-#ifdef WPIGUI_HAS_STRINGREF
-inline bool AddIcon(wpi::StringRef data) {
-  return AddIcon(data.bytes_begin(), data.size());
+inline bool AddIcon(std::string_view data) {
+  return AddIcon(reinterpret_cast<const unsigned char*>(data.data()),
+                 data.size());
 }
-#endif
 
 /**
  * Adds a font to the GUI.  The passed function is called during
@@ -141,6 +166,14 @@ void SetStyle(Style style);
  * @param color Color
  */
 void SetClearColor(ImVec4 color);
+
+/**
+ * Gets the (platform-specific) absolute directory for save files.
+ *
+ * @return Absolute path, including trailing "/". Empty string if directory
+ *         could not be determined.
+ */
+std::string GetPlatformSaveFileDir();
 
 /**
  * Configures a save file (.ini) in a platform specific location. On Windows,

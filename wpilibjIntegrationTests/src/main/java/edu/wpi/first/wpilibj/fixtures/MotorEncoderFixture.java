@@ -8,8 +8,8 @@ import edu.wpi.first.wpilibj.Counter;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.PWM;
-import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.test.TestBench;
 import java.lang.reflect.ParameterizedType;
 import java.util.logging.Logger;
@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  * fixture. This allows tests to be mailable so that you can easily reconfigure the physical testbed
  * without breaking the tests.
  */
-public abstract class MotorEncoderFixture<T extends SpeedController> implements ITestFixture {
+public abstract class MotorEncoderFixture<T extends MotorController> implements ITestFixture {
   private static final Logger logger = Logger.getLogger(MotorEncoderFixture.class.getName());
   private boolean m_initialized = false;
   private boolean m_tornDown = false;
@@ -39,12 +39,12 @@ public abstract class MotorEncoderFixture<T extends SpeedController> implements 
 
   /**
    * Where the implementer of this class should pass the speed controller Constructor should only be
-   * called from outside this class if the Speed controller is not also an implementation of PWM
+   * called from outside this class if the Motor controller is not also an implementation of PWM
    * interface.
    *
-   * @return SpeedController
+   * @return MotorController
    */
-  protected abstract T giveSpeedController();
+  protected abstract T giveMotorController();
 
   /**
    * Where the implementer of this class should pass one of the digital inputs.
@@ -76,15 +76,14 @@ public abstract class MotorEncoderFixture<T extends SpeedController> implements 
         m_counters[0] = new Counter(m_alphaSource);
         m_counters[1] = new Counter(m_betaSource);
         logger.fine("Creating the speed controller!");
-        m_motor = giveSpeedController();
+        m_motor = giveMotorController();
       }
     }
   }
 
   @Override
-  public boolean setup() {
+  public void setup() {
     initialize();
-    return true;
   }
 
   /**
@@ -136,7 +135,7 @@ public abstract class MotorEncoderFixture<T extends SpeedController> implements 
   }
 
   @Override
-  public boolean reset() {
+  public void reset() {
     initialize();
     m_motor.setInverted(false);
     m_motor.set(0);
@@ -145,15 +144,6 @@ public abstract class MotorEncoderFixture<T extends SpeedController> implements 
     for (Counter c : m_counters) {
       c.reset();
     }
-
-    boolean wasReset = true;
-    wasReset = wasReset && m_motor.get() == 0;
-    wasReset = wasReset && m_encoder.get() == 0;
-    for (Counter c : m_counters) {
-      wasReset = wasReset && c.get() == 0;
-    }
-
-    return wasReset;
   }
 
   /**
@@ -163,62 +153,37 @@ public abstract class MotorEncoderFixture<T extends SpeedController> implements 
    */
   @Override
   @SuppressWarnings("Regexp")
-  public boolean teardown() {
-    String type;
-    if (m_motor != null) {
-      type = getType();
-    } else {
-      type = "null";
-    }
+  public void teardown() {
     if (!m_tornDown) {
-      boolean wasNull = false;
-      if (m_motor instanceof PWM && m_motor != null) {
-        ((PWM) m_motor).close();
+      if (m_motor != null) {
+        if (m_motor instanceof PWM) {
+          ((PWM) m_motor).close();
+        }
         m_motor = null;
-      } else if (m_motor == null) {
-        wasNull = true;
       }
       if (m_encoder != null) {
         m_encoder.close();
         m_encoder = null;
-      } else {
-        wasNull = true;
       }
       if (m_counters[0] != null) {
         m_counters[0].close();
         m_counters[0] = null;
-      } else {
-        wasNull = true;
       }
       if (m_counters[1] != null) {
         m_counters[1].close();
         m_counters[1] = null;
-      } else {
-        wasNull = true;
       }
       if (m_alphaSource != null) {
         m_alphaSource.close();
         m_alphaSource = null;
-      } else {
-        wasNull = true;
       }
       if (m_betaSource != null) {
         m_betaSource.close();
         m_betaSource = null;
-      } else {
-        wasNull = true;
       }
 
       m_tornDown = true;
-
-      if (wasNull) {
-        throw new NullPointerException("MotorEncoderFixture had null params at teardown");
-      }
-    } else {
-      throw new RuntimeException(type + " Motor Encoder torn down multiple times");
     }
-
-    return true;
   }
 
   @Override

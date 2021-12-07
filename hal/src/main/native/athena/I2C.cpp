@@ -12,8 +12,11 @@
 
 #include <cstring>
 
+#include <fmt/format.h>
+
 #include "DigitalInternal.h"
 #include "HALInitializer.h"
+#include "HALInternal.h"
 #include "hal/DIO.h"
 #include "hal/HAL.h"
 
@@ -44,7 +47,9 @@ void HAL_InitializeI2C(HAL_I2CPort port, int32_t* status) {
   }
 
   if (port < 0 || port > 1) {
-    // Set port out of range error here
+    *status = RESOURCE_OUT_OF_RANGE;
+    hal::SetLastErrorIndexOutOfRange(status, "Invalid Index for I2C", 0, 1,
+                                     port);
     return;
   }
 
@@ -56,7 +61,7 @@ void HAL_InitializeI2C(HAL_I2CPort port, int32_t* status) {
     }
     int handle = open("/dev/i2c-2", O_RDWR);
     if (handle < 0) {
-      std::printf("Failed to open onboard i2c bus: %s\n", std::strerror(errno));
+      fmt::print("Failed to open onboard i2c bus: {}\n", std::strerror(errno));
       return;
     }
     i2COnBoardHandle = handle;
@@ -67,11 +72,11 @@ void HAL_InitializeI2C(HAL_I2CPort port, int32_t* status) {
       return;
     }
     if ((i2CMXPDigitalHandle1 = HAL_InitializeDIOPort(
-             HAL_GetPort(24), false, status)) == HAL_kInvalidHandle) {
+             HAL_GetPort(24), false, nullptr, status)) == HAL_kInvalidHandle) {
       return;
     }
     if ((i2CMXPDigitalHandle2 = HAL_InitializeDIOPort(
-             HAL_GetPort(25), false, status)) == HAL_kInvalidHandle) {
+             HAL_GetPort(25), false, nullptr, status)) == HAL_kInvalidHandle) {
       HAL_FreeDIOPort(i2CMXPDigitalHandle1);  // free the first port allocated
       return;
     }
@@ -79,7 +84,7 @@ void HAL_InitializeI2C(HAL_I2CPort port, int32_t* status) {
         digitalSystem->readEnableMXPSpecialFunction(status) | 0xC000, status);
     int handle = open("/dev/i2c-1", O_RDWR);
     if (handle < 0) {
-      std::printf("Failed to open MXP i2c bus: %s\n", std::strerror(errno));
+      fmt::print("Failed to open MXP i2c bus: {}\n", std::strerror(errno));
       return;
     }
     i2CMXPHandle = handle;
@@ -90,7 +95,9 @@ int32_t HAL_TransactionI2C(HAL_I2CPort port, int32_t deviceAddress,
                            const uint8_t* dataToSend, int32_t sendSize,
                            uint8_t* dataReceived, int32_t receiveSize) {
   if (port < 0 || port > 1) {
-    // Set port out of range error here
+    int32_t status = 0;
+    hal::SetLastErrorIndexOutOfRange(&status, "Invalid Index for I2C", 0, 1,
+                                     port);
     return -1;
   }
 
@@ -120,7 +127,9 @@ int32_t HAL_TransactionI2C(HAL_I2CPort port, int32_t deviceAddress,
 int32_t HAL_WriteI2C(HAL_I2CPort port, int32_t deviceAddress,
                      const uint8_t* dataToSend, int32_t sendSize) {
   if (port < 0 || port > 1) {
-    // Set port out of range error here
+    int32_t status = 0;
+    hal::SetLastErrorIndexOutOfRange(&status, "Invalid Index for I2C", 0, 1,
+                                     port);
     return -1;
   }
 
@@ -146,7 +155,9 @@ int32_t HAL_WriteI2C(HAL_I2CPort port, int32_t deviceAddress,
 int32_t HAL_ReadI2C(HAL_I2CPort port, int32_t deviceAddress, uint8_t* buffer,
                     int32_t count) {
   if (port < 0 || port > 1) {
-    // Set port out of range error here
+    int32_t status = 0;
+    hal::SetLastErrorIndexOutOfRange(&status, "Invalid Index for I2C", 0, 1,
+                                     port);
     return -1;
   }
 
@@ -171,7 +182,9 @@ int32_t HAL_ReadI2C(HAL_I2CPort port, int32_t deviceAddress, uint8_t* buffer,
 
 void HAL_CloseI2C(HAL_I2CPort port) {
   if (port < 0 || port > 1) {
-    // Set port out of range error here
+    int32_t status = 0;
+    hal::SetLastErrorIndexOutOfRange(&status, "Invalid Index for I2C", 0, 1,
+                                     port);
     return;
   }
 

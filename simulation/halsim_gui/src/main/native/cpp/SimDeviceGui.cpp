@@ -7,9 +7,11 @@
 #include <glass/other/DeviceTree.h>
 #include <stdint.h>
 
+#include <fmt/format.h>
 #include <hal/SimDevice.h>
 #include <hal/simulation/SimDeviceData.h>
 #include <wpi/DenseMap.h>
+#include <wpi/StringExtras.h>
 
 #include "HALDataSource.h"
 #include "HALSimGui.h"
@@ -21,7 +23,7 @@ class SimValueSource : public glass::DataSource {
  public:
   explicit SimValueSource(HAL_SimValueHandle handle, const char* device,
                           const char* name)
-      : DataSource(wpi::Twine{device} + wpi::Twine{'-'} + name),
+      : DataSource(fmt::format("{}-{}", device, name)),
         m_callback{HALSIM_RegisterSimValueChangedCallback(
             handle, this, CallbackFunc, true)} {}
   ~SimValueSource() override {
@@ -137,11 +139,11 @@ static void DisplaySimValue(const char* name, void* data,
 
 static void DisplaySimDevice(const char* name, void* data,
                              HAL_SimDeviceHandle handle) {
-  wpi::StringRef id{name};
+  std::string_view id{name};
   if (!gSimDevicesShowPrefix) {
     // only show "Foo" portion of "Accel:Foo"
-    wpi::StringRef type;
-    std::tie(type, id) = id.split(':');
+    std::string_view type;
+    std::tie(type, id) = wpi::split(id, ':');
     if (id.empty()) {
       id = type;
     }
@@ -153,7 +155,7 @@ static void DisplaySimDevice(const char* name, void* data,
 }
 
 void SimDeviceGui::Initialize() {
-  HALSimGui::halProvider.Register(
+  HALSimGui::halProvider->Register(
       "Other Devices", [] { return true; },
       [] { return std::make_unique<glass::DeviceTreeModel>(); },
       [](glass::Window* win, glass::Model* model) {
@@ -168,7 +170,7 @@ void SimDeviceGui::Initialize() {
           static_cast<glass::DeviceTreeModel*>(model)->Display();
         });
       });
-  HALSimGui::halProvider.ShowDefault("Other Devices");
+  HALSimGui::halProvider->ShowDefault("Other Devices");
 
   auto model = std::make_unique<SimDevicesModel>();
   gSimDevicesModel = model.get();
@@ -183,7 +185,7 @@ glass::DataSource* SimDeviceGui::GetValueSource(HAL_SimValueHandle handle) {
 }
 
 glass::DeviceTreeModel& SimDeviceGui::GetDeviceTree() {
-  static auto model = HALSimGui::halProvider.GetModel("Other Devices");
+  static auto model = HALSimGui::halProvider->GetModel("Other Devices");
   assert(model);
   return *static_cast<glass::DeviceTreeModel*>(model);
 }

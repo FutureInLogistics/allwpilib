@@ -8,6 +8,7 @@
 
 #include "glass/Context.h"
 #include "glass/DataSource.h"
+#include "glass/Storage.h"
 #include "glass/support/ExtraGuiWidgets.h"
 
 using namespace glass;
@@ -31,20 +32,20 @@ void glass::DisplayRelay(RelayModel* model, int index, bool outputsEnabled) {
     }
   }
 
-  std::string* name = GetStorage().GetStringRef("name");
+  std::string& name = GetStorage().GetString("name");
   ImGui::PushID("name");
-  if (!name->empty()) {
-    ImGui::Text("%s [%d]", name->c_str(), index);
+  if (!name.empty()) {
+    ImGui::Text("%s [%d]", name.c_str(), index);
   } else {
     ImGui::Text("Relay[%d]", index);
   }
   ImGui::PopID();
-  if (PopupEditName("name", name)) {
+  if (PopupEditName("name", &name)) {
     if (forwardData) {
-      forwardData->SetName(name->c_str());
+      forwardData->SetName(name);
     }
     if (reverseData) {
-      reverseData->SetName(name->c_str());
+      reverseData->SetName(name);
     }
   }
   ImGui::SameLine();
@@ -60,7 +61,7 @@ void glass::DisplayRelay(RelayModel* model, int index, bool outputsEnabled) {
 }
 
 void glass::DisplayRelays(RelaysModel* model, bool outputsEnabled,
-                          wpi::StringRef noneMsg) {
+                          std::string_view noneMsg) {
   bool hasAny = false;
   bool first = true;
   model->ForEachRelay([&](RelayModel& relay, int i) {
@@ -77,6 +78,6 @@ void glass::DisplayRelays(RelaysModel* model, bool outputsEnabled,
     PopID();
   });
   if (!hasAny && !noneMsg.empty()) {
-    ImGui::TextUnformatted(noneMsg.begin(), noneMsg.end());
+    ImGui::TextUnformatted(noneMsg.data(), noneMsg.data() + noneMsg.size());
   }
 }

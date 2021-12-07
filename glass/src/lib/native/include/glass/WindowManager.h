@@ -4,20 +4,17 @@
 
 #pragma once
 
-#include <functional>
 #include <memory>
-#include <type_traits>
+#include <string_view>
 #include <vector>
 
-#include <imgui.h>
 #include <wpi/FunctionExtras.h>
-#include <wpi/StringRef.h>
-#include <wpi/Twine.h>
 
 #include "glass/Window.h"
-#include "glass/support/IniSaverBase.h"
 
 namespace glass {
+
+class Storage;
 
 /**
  * Window manager.
@@ -32,9 +29,9 @@ class WindowManager {
   /**
    * Constructor.
    *
-   * @param iniName Group name to use in ini file
+   * @param storage Storage for window information
    */
-  explicit WindowManager(const wpi::Twine& iniName);
+  explicit WindowManager(Storage& storage);
   virtual ~WindowManager() = default;
 
   WindowManager(const WindowManager&) = delete;
@@ -66,8 +63,10 @@ class WindowManager {
    *
    * @param id unique identifier of the window (title bar)
    * @param display window contents display function
+   * @param defaultVisibility default window visibility
    */
-  Window* AddWindow(wpi::StringRef id, wpi::unique_function<void()> display);
+  Window* AddWindow(std::string_view id, wpi::unique_function<void()> display,
+                    Window::Visibility defaultVisibility = Window::kShow);
 
   /**
    * Adds window to GUI.  The view's display function is called from within a
@@ -83,9 +82,11 @@ class WindowManager {
    *
    * @param id unique identifier of the window (title bar)
    * @param view view object
+   * @param defaultVisibility default window visibility
    * @return Window, or nullptr on duplicate window
    */
-  Window* AddWindow(wpi::StringRef id, std::unique_ptr<View> view);
+  Window* AddWindow(std::string_view id, std::unique_ptr<View> view,
+                    Window::Visibility defaultVisibility = Window::kShow);
 
   /**
    * Adds window to GUI.  A View must be assigned to the returned Window
@@ -100,9 +101,12 @@ class WindowManager {
    * every frame in the gui::AddExecute() function.
    *
    * @param id unique identifier of the window (default title bar)
+   * @param duplicateOk if false, warn on duplicates
+   * @param defaultVisibility default window visibility
    * @return Window, or nullptr on duplicate window
    */
-  Window* GetOrAddWindow(wpi::StringRef id, bool duplicateOk = false);
+  Window* GetOrAddWindow(std::string_view id, bool duplicateOk = false,
+                         Window::Visibility defaultVisibility = Window::kShow);
 
   /**
    * Gets existing window.  If none exists, returns nullptr.
@@ -110,29 +114,28 @@ class WindowManager {
    * @param id unique identifier of the window (default title bar)
    * @return Window, or nullptr if window does not exist
    */
-  Window* GetWindow(wpi::StringRef id);
+  Window* GetWindow(std::string_view id);
+
+  /**
+   * Erases all windows.
+   */
+  void EraseWindows() { m_windows.clear(); }
 
  protected:
-  virtual void DisplayWindows();
+  /**
+   * Removes existing window (by index)
+   *
+   * @param index index of window in m_windows
+   */
+  void RemoveWindow(size_t index);
 
   // kept sorted by id
   std::vector<std::unique_ptr<Window>> m_windows;
 
+  Storage& m_storage;
+
  private:
-  class IniSaver : public IniSaverBase {
-   public:
-    explicit IniSaver(const wpi::Twine& typeName, WindowManager* manager)
-        : IniSaverBase{typeName}, m_manager{manager} {}
-
-    void* IniReadOpen(const char* name) override;
-    void IniReadLine(void* entry, const char* lineStr) override;
-    void IniWriteAll(ImGuiTextBuffer* out_buf) override;
-
-   private:
-    WindowManager* m_manager;
-  };
-
-  IniSaver m_iniSaver;
+  void DisplayWindows();
 };
 
 }  // namespace glass

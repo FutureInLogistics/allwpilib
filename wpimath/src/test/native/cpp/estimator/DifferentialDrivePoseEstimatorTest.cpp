@@ -17,7 +17,7 @@
 #include "units/length.h"
 #include "units/time.h"
 
-TEST(DifferentialDrivePoseEstimatorTest, TestAccuracy) {
+TEST(DifferentialDrivePoseEstimatorTest, Accuracy) {
   frc::DifferentialDrivePoseEstimator estimator{frc::Rotation2d(),
                                                 frc::Pose2d(),
                                                 {0.02, 0.02, 0.01, 0.02, 0.02},
@@ -82,7 +82,7 @@ TEST(DifferentialDrivePoseEstimatorTest, TestAccuracy) {
 
     double error = groundTruthState.pose.Translation()
                        .Distance(xhat.Translation())
-                       .to<double>();
+                       .value();
 
     if (error > maxError) {
       maxError = error;
@@ -92,8 +92,7 @@ TEST(DifferentialDrivePoseEstimatorTest, TestAccuracy) {
     t += dt;
   }
 
-  EXPECT_NEAR(
-      0.0, errorSum / (trajectory.TotalTime().to<double>() / dt.to<double>()),
-      0.2);
+  EXPECT_NEAR(0.0, errorSum / (trajectory.TotalTime().value() / dt.value()),
+              0.2);
   EXPECT_NEAR(0.0, maxError, 0.4);
 }

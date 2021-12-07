@@ -8,6 +8,7 @@
 
 #include "glass/Context.h"
 #include "glass/DataSource.h"
+#include "glass/Storage.h"
 
 using namespace glass;
 
@@ -18,10 +19,10 @@ void glass::DisplayAnalogInput(AnalogInputModel* model, int index) {
   }
 
   // build label
-  std::string* name = GetStorage().GetStringRef("name");
+  std::string& name = GetStorage().GetString("name");
   char label[128];
-  if (!name->empty()) {
-    std::snprintf(label, sizeof(label), "%s [%d]###name", name->c_str(), index);
+  if (!name.empty()) {
+    std::snprintf(label, sizeof(label), "%s [%d]###name", name.c_str(), index);
   } else {
     std::snprintf(label, sizeof(label), "In[%d]###name", index);
   }
@@ -42,13 +43,13 @@ void glass::DisplayAnalogInput(AnalogInputModel* model, int index) {
   }
 
   // context menu to change name
-  if (PopupEditName("name", name)) {
-    voltageData->SetName(name->c_str());
+  if (PopupEditName("name", &name)) {
+    voltageData->SetName(name);
   }
 }
 
 void glass::DisplayAnalogInputs(AnalogInputsModel* model,
-                                wpi::StringRef noneMsg) {
+                                std::string_view noneMsg) {
   ImGui::Text("(Use Ctrl+Click to edit value)");
   bool hasAny = false;
   bool first = true;
@@ -65,6 +66,6 @@ void glass::DisplayAnalogInputs(AnalogInputsModel* model,
     hasAny = true;
   });
   if (!hasAny && !noneMsg.empty()) {
-    ImGui::TextUnformatted(noneMsg.begin(), noneMsg.end());
+    ImGui::TextUnformatted(noneMsg.data(), noneMsg.data() + noneMsg.size());
   }
 }

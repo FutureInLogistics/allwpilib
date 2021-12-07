@@ -5,26 +5,31 @@
 #include "glass/Window.h"
 
 #include <imgui_internal.h>
-#include <wpi/StringRef.h>
+#include <wpi/StringExtras.h>
 
 #include "glass/Context.h"
+#include "glass/Storage.h"
 
 using namespace glass;
 
+Window::Window(Storage& storage, std::string_view id,
+               Visibility defaultVisibility)
+    : m_id{id},
+      m_name{storage.GetString("name")},
+      m_defaultName{id},
+      m_visible{storage.GetBool("visible", defaultVisibility != kHide)},
+      m_enabled{storage.GetBool("enabled", defaultVisibility != kDisabled)},
+      m_defaultVisible{storage.GetValue("visible").boolDefault},
+      m_defaultEnabled{storage.GetValue("enabled").boolDefault} {}
+
 void Window::SetVisibility(Visibility visibility) {
-  switch (visibility) {
-    case kHide:
-      m_visible = false;
-      m_enabled = true;
-      break;
-    case kShow:
-      m_visible = true;
-      m_enabled = true;
-      break;
-    case kDisabled:
-      m_enabled = false;
-      break;
-  }
+  m_visible = visibility != kHide;
+  m_enabled = visibility != kDisabled;
+}
+
+void Window::SetDefaultVisibility(Visibility visibility) {
+  m_defaultVisible = visibility != kHide;
+  m_defaultEnabled = visibility != kDisabled;
 }
 
 void Window::Display() {
@@ -84,33 +89,4 @@ void Window::ScaleDefault(float scale) {
     m_size.x *= scale;
     m_size.y *= scale;
   }
-}
-
-void Window::IniReadLine(const char* lineStr) {
-  wpi::StringRef line{lineStr};
-  auto [name, value] = line.split('=');
-  name = name.trim();
-  value = value.trim();
-
-  if (name == "name") {
-    m_name = value;
-  } else if (name == "visible") {
-    int num;
-    if (value.getAsInteger(10, num)) {
-      return;
-    }
-    m_visible = num;
-  } else if (name == "enabled") {
-    int num;
-    if (value.getAsInteger(10, num)) {
-      return;
-    }
-    m_enabled = num;
-  }
-}
-
-void Window::IniWriteAll(const char* typeName, ImGuiTextBuffer* out_buf) {
-  out_buf->appendf("[%s][%s]\nname=%s\nvisible=%d\nenabled=%d\n\n", typeName,
-                   m_id.c_str(), m_name.c_str(), m_visible ? 1 : 0,
-                   m_enabled ? 1 : 0);
 }

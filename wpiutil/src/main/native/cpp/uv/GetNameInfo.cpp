@@ -39,12 +39,12 @@ void GetNameInfo(Loop& loop,
                  std::function<void(const char*, const char*)> callback,
                  const sockaddr& addr, int flags) {
   auto req = std::make_shared<GetNameInfoReq>();
-  req->resolved.connect(callback);
+  req->resolved.connect(std::move(callback));
   GetNameInfo(loop, req, addr, flags);
 }
 
 void GetNameInfo4(Loop& loop, const std::shared_ptr<GetNameInfoReq>& req,
-                  const Twine& ip, unsigned int port, int flags) {
+                  std::string_view ip, unsigned int port, int flags) {
   sockaddr_in addr;
   int err = NameToAddr(ip, port, &addr);
   if (err < 0) {
@@ -56,18 +56,19 @@ void GetNameInfo4(Loop& loop, const std::shared_ptr<GetNameInfoReq>& req,
 
 void GetNameInfo4(Loop& loop,
                   std::function<void(const char*, const char*)> callback,
-                  const Twine& ip, unsigned int port, int flags) {
+                  std::string_view ip, unsigned int port, int flags) {
   sockaddr_in addr;
   int err = NameToAddr(ip, port, &addr);
   if (err < 0) {
     loop.ReportError(err);
   } else {
-    GetNameInfo(loop, callback, reinterpret_cast<const sockaddr&>(addr), flags);
+    GetNameInfo(loop, std::move(callback),
+                reinterpret_cast<const sockaddr&>(addr), flags);
   }
 }
 
 void GetNameInfo6(Loop& loop, const std::shared_ptr<GetNameInfoReq>& req,
-                  const Twine& ip, unsigned int port, int flags) {
+                  std::string_view ip, unsigned int port, int flags) {
   sockaddr_in6 addr;
   int err = NameToAddr(ip, port, &addr);
   if (err < 0) {
@@ -79,13 +80,14 @@ void GetNameInfo6(Loop& loop, const std::shared_ptr<GetNameInfoReq>& req,
 
 void GetNameInfo6(Loop& loop,
                   std::function<void(const char*, const char*)> callback,
-                  const Twine& ip, unsigned int port, int flags) {
+                  std::string_view ip, unsigned int port, int flags) {
   sockaddr_in6 addr;
   int err = NameToAddr(ip, port, &addr);
   if (err < 0) {
     loop.ReportError(err);
   } else {
-    GetNameInfo(loop, callback, reinterpret_cast<const sockaddr&>(addr), flags);
+    GetNameInfo(loop, std::move(callback),
+                reinterpret_cast<const sockaddr&>(addr), flags);
   }
 }
 

@@ -6,18 +6,16 @@
 
 #include <functional>
 #include <memory>
+#include <string_view>
 #include <vector>
 
+#include <ntcore_c.h>
 #include <ntcore_cpp.h>
 #include <wpi/StringMap.h>
-#include <wpi/StringRef.h>
-#include <wpi/Twine.h>
 
 #include "glass/Model.h"
 #include "glass/Provider.h"
 #include "glass/networktables/NetworkTablesHelper.h"
-#include "glass/support/IniSaverInfo.h"
-#include "glass/support/IniSaverString.h"
 
 namespace glass {
 
@@ -42,8 +40,8 @@ class NetworkTablesProvider : private Provider<detail::NTProviderFunctions> {
   using Provider::CreateModelFunc;
   using Provider::CreateViewFunc;
 
-  explicit NetworkTablesProvider(const wpi::Twine& iniName);
-  NetworkTablesProvider(const wpi::Twine& iniName, NT_Inst inst);
+  explicit NetworkTablesProvider(Storage& storage);
+  NetworkTablesProvider(Storage& storage, NT_Inst inst);
 
   /**
    * Get the NetworkTables instance being used for this provider.
@@ -56,7 +54,7 @@ class NetworkTablesProvider : private Provider<detail::NTProviderFunctions> {
    * Perform global initialization.  This should be called prior to
    * wpi::gui::Initialize().
    */
-  void GlobalInit() override;
+  void GlobalInit() override { Provider::GlobalInit(); }
 
   /**
    * Displays menu contents as a tree of available NetworkTables views.
@@ -70,18 +68,17 @@ class NetworkTablesProvider : private Provider<detail::NTProviderFunctions> {
    * @param createModel functor to create model
    * @param createView functor to create view
    */
-  void Register(wpi::StringRef typeName, CreateModelFunc createModel,
+  void Register(std::string_view typeName, CreateModelFunc createModel,
                 CreateViewFunc createView);
-
-  using WindowManager::AddWindow;
 
  private:
   void Update() override;
 
   NetworkTablesHelper m_nt;
+  NT_EntryListener m_listener{0};
 
   // cached mapping from table name to type string
-  IniSaverString<NameInfo> m_typeCache;
+  Storage& m_typeCache;
 
   struct Builder {
     CreateModelFunc createModel;
@@ -92,7 +89,7 @@ class NetworkTablesProvider : private Provider<detail::NTProviderFunctions> {
   wpi::StringMap<Builder> m_typeMap;
 
   struct Entry : public ModelEntry {
-    Entry(NT_Entry typeEntry, wpi::StringRef name, const Builder& builder)
+    Entry(NT_Entry typeEntry, std::string_view name, const Builder& builder)
         : ModelEntry{name, [](NT_Inst, const char*) { return true; },
                      builder.createModel},
           typeEntry{typeEntry} {}
@@ -102,7 +99,7 @@ class NetworkTablesProvider : private Provider<detail::NTProviderFunctions> {
   void Show(ViewEntry* entry, Window* window) override;
 
   ViewEntry* GetOrCreateView(const Builder& builder, NT_Entry typeEntry,
-                             wpi::StringRef name);
+                             std::string_view name);
 };
 
 /**

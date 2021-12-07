@@ -12,10 +12,11 @@ using namespace wpi::uv;
 namespace {
 class CallbackWriteReq : public WriteReq {
  public:
-  CallbackWriteReq(ArrayRef<Buffer> bufs,
-                   std::function<void(MutableArrayRef<Buffer>, Error)> callback)
+  CallbackWriteReq(span<const Buffer> bufs,
+                   std::function<void(span<Buffer>, Error)> callback)
       : m_bufs{bufs.begin(), bufs.end()} {
-    finish.connect([=](Error err) { callback(m_bufs, err); });
+    finish.connect(
+        [this, f = std::move(callback)](Error err) { f(m_bufs, err); });
   }
 
  private:
@@ -51,7 +52,7 @@ void Stream::Shutdown(const std::shared_ptr<ShutdownReq>& req) {
 void Stream::Shutdown(std::function<void()> callback) {
   auto req = std::make_shared<ShutdownReq>();
   if (callback) {
-    req->complete.connect(callback);
+    req->complete.connect(std::move(callback));
   }
   Shutdown(req);
 }
@@ -76,7 +77,7 @@ void Stream::StartRead() {
          });
 }
 
-void Stream::Write(ArrayRef<Buffer> bufs,
+void Stream::Write(span<const Buffer> bufs,
                    const std::shared_ptr<WriteReq>& req) {
   if (Invoke(&uv_write, req->GetRaw(), GetRawStream(), bufs.data(), bufs.size(),
              [](uv_write_t* r, int status) {
@@ -91,13 +92,12 @@ void Stream::Write(ArrayRef<Buffer> bufs,
   }
 }
 
-void Stream::Write(
-    ArrayRef<Buffer> bufs,
-    std::function<void(MutableArrayRef<Buffer>, Error)> callback) {
-  Write(bufs, std::make_shared<CallbackWriteReq>(bufs, callback));
+void Stream::Write(span<const Buffer> bufs,
+                   std::function<void(span<Buffer>, Error)> callback) {
+  Write(bufs, std::make_shared<CallbackWriteReq>(bufs, std::move(callback)));
 }
 
-int Stream::TryWrite(ArrayRef<Buffer> bufs) {
+int Stream::TryWrite(span<const Buffer> bufs) {
   int val = uv_try_write(GetRawStream(), bufs.data(), bufs.size());
   if (val < 0) {
     this->ReportError(val);

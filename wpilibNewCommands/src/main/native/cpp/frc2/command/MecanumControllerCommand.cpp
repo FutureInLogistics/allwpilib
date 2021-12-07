@@ -102,7 +102,7 @@ MecanumControllerCommand::MecanumControllerCommand(
     std::function<void(units::volt_t, units::volt_t, units::volt_t,
                        units::volt_t)>
         output,
-    wpi::ArrayRef<Subsystem*> requirements)
+    wpi::span<Subsystem* const> requirements)
     : m_trajectory(std::move(trajectory)),
       m_pose(std::move(pose)),
       m_feedforward(feedforward),
@@ -139,7 +139,7 @@ MecanumControllerCommand::MecanumControllerCommand(
     std::function<void(units::volt_t, units::volt_t, units::volt_t,
                        units::volt_t)>
         output,
-    wpi::ArrayRef<Subsystem*> requirements)
+    wpi::span<Subsystem* const> requirements)
     : m_trajectory(std::move(trajectory)),
       m_pose(std::move(pose)),
       m_feedforward(feedforward),
@@ -218,7 +218,7 @@ MecanumControllerCommand::MecanumControllerCommand(
     std::function<void(units::meters_per_second_t, units::meters_per_second_t,
                        units::meters_per_second_t, units::meters_per_second_t)>
         output,
-    wpi::ArrayRef<Subsystem*> requirements)
+    wpi::span<Subsystem* const> requirements)
     : m_trajectory(std::move(trajectory)),
       m_pose(std::move(pose)),
       m_kinematics(kinematics),
@@ -239,7 +239,7 @@ MecanumControllerCommand::MecanumControllerCommand(
     std::function<void(units::meters_per_second_t, units::meters_per_second_t,
                        units::meters_per_second_t, units::meters_per_second_t)>
         output,
-    wpi::ArrayRef<Subsystem*> requirements)
+    wpi::span<Subsystem* const> requirements)
     : m_trajectory(std::move(trajectory)),
       m_pose(std::move(pose)),
       m_kinematics(kinematics),
@@ -310,20 +310,20 @@ void MecanumControllerCommand::Execute() {
         (rearRightSpeedSetpoint - m_prevSpeeds.rearRight) / dt);
 
     auto frontLeftOutput = volt_t(m_frontLeftController->Calculate(
-                               m_currentWheelSpeeds().frontLeft.to<double>(),
-                               frontLeftSpeedSetpoint.to<double>())) +
+                               m_currentWheelSpeeds().frontLeft.value(),
+                               frontLeftSpeedSetpoint.value())) +
                            frontLeftFeedforward;
     auto rearLeftOutput = volt_t(m_rearLeftController->Calculate(
-                              m_currentWheelSpeeds().rearLeft.to<double>(),
-                              rearLeftSpeedSetpoint.to<double>())) +
+                              m_currentWheelSpeeds().rearLeft.value(),
+                              rearLeftSpeedSetpoint.value())) +
                           rearLeftFeedforward;
     auto frontRightOutput = volt_t(m_frontRightController->Calculate(
-                                m_currentWheelSpeeds().frontRight.to<double>(),
-                                frontRightSpeedSetpoint.to<double>())) +
+                                m_currentWheelSpeeds().frontRight.value(),
+                                frontRightSpeedSetpoint.value())) +
                             frontRightFeedforward;
     auto rearRightOutput = volt_t(m_rearRightController->Calculate(
-                               m_currentWheelSpeeds().rearRight.to<double>(),
-                               rearRightSpeedSetpoint.to<double>())) +
+                               m_currentWheelSpeeds().rearRight.value(),
+                               rearRightSpeedSetpoint.value())) +
                            rearRightFeedforward;
 
     m_outputVolts(frontLeftOutput, rearLeftOutput, frontRightOutput,

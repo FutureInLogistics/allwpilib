@@ -6,9 +6,7 @@
 
 #include <cassert>
 
-#include <wpi/SmallString.h>
 #include <wpi/jni_util.h>
-#include <wpi/raw_ostream.h>
 
 #include "HALUtil.h"
 #include "edu_wpi_first_hal_can_CANJNI.h"
@@ -65,17 +63,17 @@ Java_edu_wpi_first_hal_can_CANJNI_FRCNetCommCANSessionMuxReceiveMessage
     return nullptr;
   }
   return MakeJByteArray(env,
-                        wpi::StringRef{reinterpret_cast<const char*>(buffer),
-                                       static_cast<size_t>(dataSize)});
+                        std::string_view{reinterpret_cast<const char*>(buffer),
+                                         static_cast<size_t>(dataSize)});
 }
 
 /*
  * Class:     edu_wpi_first_hal_can_CANJNI
- * Method:    GetCANStatus
+ * Method:    getCANStatus
  * Signature: (Ljava/lang/Object;)V
  */
 JNIEXPORT void JNICALL
-Java_edu_wpi_first_hal_can_CANJNI_GetCANStatus
+Java_edu_wpi_first_hal_can_CANJNI_getCANStatus
   (JNIEnv* env, jclass, jobject canStatus)
 {
   float percentBusUtilization = 0;

@@ -6,11 +6,14 @@
 
 #include <glass/WindowManager.h>
 
+#include <memory>
+#include <string_view>
+
 namespace halsimgui {
 
 class DSManager : public glass::WindowManager {
  public:
-  explicit DSManager(const wpi::Twine& iniName) : WindowManager{iniName} {}
+  explicit DSManager(glass::Storage& storage) : WindowManager{storage} {}
 
   void DisplayMenu() override;
 };
@@ -20,7 +23,7 @@ class DriverStationGui {
   static void GlobalInit();
   static void SetDSSocketExtension(void* data);
 
-  static DSManager dsManager;
+  static std::unique_ptr<DSManager> dsManager;
 };
 
 }  // namespace halsimgui

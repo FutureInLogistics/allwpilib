@@ -5,13 +5,15 @@
 #include <memory>
 
 #include <GLFW/glfw3.h>
+#include <fmt/format.h>
 #include <imgui.h>
 #include <ntcore_cpp.h>
-#include <wpi/SmallString.h>
 #include <wpigui.h>
 
 #include "glass/Context.h"
+#include "glass/MainMenuBar.h"
 #include "glass/Model.h"
+#include "glass/Storage.h"
 #include "glass/View.h"
 #include "glass/networktables/NetworkTables.h"
 #include "glass/networktables/NetworkTablesProvider.h"
@@ -24,13 +26,13 @@ namespace gui = wpi::gui;
 const char* GetWPILibVersion();
 
 namespace glass {
-wpi::StringRef GetResource_glass_16_png();
-wpi::StringRef GetResource_glass_32_png();
-wpi::StringRef GetResource_glass_48_png();
-wpi::StringRef GetResource_glass_64_png();
-wpi::StringRef GetResource_glass_128_png();
-wpi::StringRef GetResource_glass_256_png();
-wpi::StringRef GetResource_glass_512_png();
+std::string_view GetResource_glass_16_png();
+std::string_view GetResource_glass_32_png();
+std::string_view GetResource_glass_48_png();
+std::string_view GetResource_glass_64_png();
+std::string_view GetResource_glass_128_png();
+std::string_view GetResource_glass_256_png();
+std::string_view GetResource_glass_512_png();
 }  // namespace glass
 
 static std::unique_ptr<glass::PlotProvider> gPlotProvider;
@@ -39,9 +41,12 @@ static std::unique_ptr<glass::NetworkTablesProvider> gNtProvider;
 static std::unique_ptr<glass::NetworkTablesModel> gNetworkTablesModel;
 static std::unique_ptr<glass::NetworkTablesSettings> gNetworkTablesSettings;
 static glass::LogData gNetworkTablesLog;
-static glass::Window* gNetworkTablesWindow;
-static glass::Window* gNetworkTablesSettingsWindow;
-static glass::Window* gNetworkTablesLogWindow;
+static std::unique_ptr<glass::Window> gNetworkTablesWindow;
+static std::unique_ptr<glass::Window> gNetworkTablesSettingsWindow;
+static std::unique_ptr<glass::Window> gNetworkTablesLogWindow;
+
+static glass::MainMenuBar gMainMenu;
+static bool gAbout = false;
 
 static void NtInitialize() {
   // update window title when connection status changes
@@ -56,11 +61,9 @@ static void NtInitialize() {
     bool timedOut;
     for (auto&& event : nt::PollConnectionListener(poller, 0, &timedOut)) {
       if (event.connected) {
-        wpi::SmallString<64> title;
-        title = "Glass - Connected (";
-        title += event.conn.remote_ip;
-        title += ')';
-        glfwSetWindowTitle(win, title.c_str());
+        glfwSetWindowTitle(
+            win, fmt::format("Glass - Connected ({})", event.conn.remote_ip)
+                     .c_str());
       } else {
         glfwSetWindowTitle(win, "Glass - DISCONNECTED");
       }
@@ -81,54 +84,70 @@ static void NtInitialize() {
       } else if (msg.level >= NT_LOG_WARNING) {
         level = "WARNING: ";
       }
-      gNetworkTablesLog.Append(
-          wpi::Twine{level} + msg.message + wpi::Twine{" ("} + msg.filename +
-          wpi::Twine{':'} + wpi::Twine{msg.line} + wpi::Twine{")\n"});
+      gNetworkTablesLog.Append(fmt::format("{}{} ({}:{})\n", level, msg.message,
+                                           msg.filename, msg.line));
     }
   });
 
-  gNetworkTablesLogWindow = gNtProvider->AddWindow(
-      "NetworkTables Log",
+  gNetworkTablesLogWindow = std::make_unique<glass::Window>(
+      glass::GetStorageRoot().GetChild("NetworkTables Log"),
+      "NetworkTables Log", glass::Window::kHide);
+  gNetworkTablesLogWindow->SetView(
       std::make_unique<glass::LogView>(&gNetworkTablesLog));
-  if (gNetworkTablesLogWindow) {
-    gNetworkTablesLogWindow->SetDefaultPos(250, 615);
-    gNetworkTablesLogWindow->SetDefaultSize(600, 130);
-    gNetworkTablesLogWindow->SetVisible(false);
-    gNetworkTablesLogWindow->DisableRenamePopup();
-  }
+  gNetworkTablesLogWindow->SetDefaultPos(250, 615);
+  gNetworkTablesLogWindow->SetDefaultSize(600, 130);
+  gNetworkTablesLogWindow->DisableRenamePopup();
+  gui::AddLateExecute([] { gNetworkTablesLogWindow->Display(); });
 
   // NetworkTables table window
   gNetworkTablesModel = std::make_unique<glass::NetworkTablesModel>();
   gui::AddEarlyExecute([] { gNetworkTablesModel->Update(); });
 
-  gNetworkTablesWindow = gNtProvider->AddWindow(
-      "NetworkTables",
+  gNetworkTablesWindow = std::make_unique<glass::Window>(
+      glass::GetStorageRoot().GetChild("NetworkTables View"), "NetworkTables");
+  gNetworkTablesWindow->SetView(
       std::make_unique<glass::NetworkTablesView>(gNetworkTablesModel.get()));
-  if (gNetworkTablesWindow) {
-    gNetworkTablesWindow->SetDefaultPos(250, 277);
-    gNetworkTablesWindow->SetDefaultSize(750, 185);
-    gNetworkTablesWindow->DisableRenamePopup();
-  }
+  gNetworkTablesWindow->SetDefaultPos(250, 277);
+  gNetworkTablesWindow->SetDefaultSize(750, 185);
+  gNetworkTablesWindow->DisableRenamePopup();
+  gui::AddLateExecute([] { gNetworkTablesWindow->Display(); });
 
   // NetworkTables settings window
-  gNetworkTablesSettings = std::make_unique<glass::NetworkTablesSettings>();
+  gNetworkTablesSettings = std::make_unique<glass::NetworkTablesSettings>(
+      glass::GetStorageRoot().GetChild("NetworkTables Settings"));
   gui::AddEarlyExecute([] { gNetworkTablesSettings->Update(); });
 
-  gNetworkTablesSettingsWindow = gNtProvider->AddWindow(
-      "NetworkTables Settings", [] { gNetworkTablesSettings->Display(); });
-  if (gNetworkTablesSettingsWindow) {
-    gNetworkTablesSettingsWindow->SetDefaultPos(30, 30);
-    gNetworkTablesSettingsWindow->SetFlags(ImGuiWindowFlags_AlwaysAutoResize);
-    gNetworkTablesSettingsWindow->DisableRenamePopup();
-  }
+  gNetworkTablesSettingsWindow = std::make_unique<glass::Window>(
+      glass::GetStorageRoot().GetChild("NetworkTables Settings"),
+      "NetworkTables Settings");
+  gNetworkTablesSettingsWindow->SetView(
+      glass::MakeFunctionView([] { gNetworkTablesSettings->Display(); }));
+  gNetworkTablesSettingsWindow->SetDefaultPos(30, 30);
+  gNetworkTablesSettingsWindow->SetFlags(ImGuiWindowFlags_AlwaysAutoResize);
+  gNetworkTablesSettingsWindow->DisableRenamePopup();
+  gui::AddLateExecute([] { gNetworkTablesSettingsWindow->Display(); });
+
+  gui::AddWindowScaler([](float scale) {
+    // scale default window positions
+    gNetworkTablesLogWindow->ScaleDefault(scale);
+    gNetworkTablesWindow->ScaleDefault(scale);
+    gNetworkTablesSettingsWindow->ScaleDefault(scale);
+  });
 }
 
 #ifdef _WIN32
 int __stdcall WinMain(void* hInstance, void* hPrevInstance, char* pCmdLine,
                       int nCmdShow) {
+  int argc = __argc;
+  char** argv = __argv;
 #else
-int main() {
+int main(int argc, char** argv) {
 #endif
+  std::string_view saveDir;
+  if (argc == 2) {
+    saveDir = argv[1];
+  }
+
   gui::CreateContext();
   glass::CreateContext();
 
@@ -140,20 +159,24 @@ int main() {
   gui::AddIcon(glass::GetResource_glass_256_png());
   gui::AddIcon(glass::GetResource_glass_512_png());
 
-  gPlotProvider = std::make_unique<glass::PlotProvider>("Plot");
-  gNtProvider = std::make_unique<glass::NetworkTablesProvider>("NTProvider");
+  gPlotProvider = std::make_unique<glass::PlotProvider>(
+      glass::GetStorageRoot().GetChild("Plots"));
+  gNtProvider = std::make_unique<glass::NetworkTablesProvider>(
+      glass::GetStorageRoot().GetChild("NetworkTables"));
 
-  gui::ConfigurePlatformSaveFile("glass.ini");
+  glass::SetStorageName("glass");
+  glass::SetStorageDir(saveDir.empty() ? gui::GetPlatformSaveFileDir()
+                                       : saveDir);
   gPlotProvider->GlobalInit();
   gui::AddInit([] { glass::ResetTime(); });
   gNtProvider->GlobalInit();
-  gui::AddInit(NtInitialize);
+  NtInitialize();
 
   glass::AddStandardNetworkTablesViews(*gNtProvider);
 
-  gui::AddLateExecute([] {
-    ImGui::BeginMainMenuBar();
-    gui::EmitViewMenu();
+  gui::AddLateExecute([] { gMainMenu.Display(); });
+
+  gMainMenu.AddMainMenu([] {
     if (ImGui::BeginMenu("View")) {
       if (ImGui::MenuItem("Reset Time")) {
         glass::ResetTime();
@@ -184,23 +207,25 @@ int main() {
       ImGui::EndMenu();
     }
 
-    bool about = false;
     if (ImGui::BeginMenu("Info")) {
       if (ImGui::MenuItem("About")) {
-        about = true;
+        gAbout = true;
       }
       ImGui::EndMenu();
     }
-    ImGui::EndMainMenuBar();
+  });
 
-    if (about) {
+  gui::AddLateExecute([] {
+    if (gAbout) {
       ImGui::OpenPopup("About");
-      about = false;
+      gAbout = false;
     }
     if (ImGui::BeginPopupModal("About")) {
       ImGui::Text("Glass: A different kind of dashboard");
       ImGui::Separator();
       ImGui::Text("v%s", GetWPILibVersion());
+      ImGui::Separator();
+      ImGui::Text("Save location: %s", glass::GetStorageDir().c_str());
       if (ImGui::Button("Close")) {
         ImGui::CloseCurrentPopup();
       }
@@ -211,11 +236,15 @@ int main() {
   gui::Initialize("Glass - DISCONNECTED", 1024, 768);
   gui::Main();
 
+  gNetworkTablesSettingsWindow.reset();
+  gNetworkTablesLogWindow.reset();
+  gNetworkTablesWindow.reset();
   gNetworkTablesModel.reset();
-  gNetworkTablesSettings.reset();
   gNtProvider.reset();
   gPlotProvider.reset();
 
   glass::DestroyContext();
   gui::DestroyContext();
+
+  return 0;
 }

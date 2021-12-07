@@ -8,6 +8,8 @@
 
 #include <utility>
 
+#include <wpi/MathExtras.h>
+
 #include "frc/RobotController.h"
 #include "frc/system/NumericalIntegration.h"
 
@@ -39,15 +41,15 @@ DifferentialDrivetrainSim::DifferentialDrivetrainSim(
               driveMotor, mass, wheelRadius, trackWidth / 2.0, J, gearing),
           trackWidth, driveMotor, gearing, wheelRadius, measurementStdDevs) {}
 
-Eigen::Matrix<double, 2, 1> DifferentialDrivetrainSim::ClampInput(
-    Eigen::Matrix<double, 2, 1> u) {
+Eigen::Vector<double, 2> DifferentialDrivetrainSim::ClampInput(
+    const Eigen::Vector<double, 2>& u) {
   return frc::NormalizeInputVector<2>(u,
                                       frc::RobotController::GetInputVoltage());
 }
 
 void DifferentialDrivetrainSim::SetInputs(units::volt_t leftVoltage,
                                           units::volt_t rightVoltage) {
-  m_u << leftVoltage.to<double>(), rightVoltage.to<double>();
+  m_u << leftVoltage.value(), rightVoltage.value();
   m_u = ClampInput(m_u);
 }
 
@@ -64,11 +66,11 @@ double DifferentialDrivetrainSim::GetGearing() const {
   return m_currentGearing;
 }
 
-Eigen::Matrix<double, 7, 1> DifferentialDrivetrainSim::GetOutput() const {
+Eigen::Vector<double, 7> DifferentialDrivetrainSim::GetOutput() const {
   return m_y;
 }
 
-Eigen::Matrix<double, 7, 1> DifferentialDrivetrainSim::GetState() const {
+Eigen::Vector<double, 7> DifferentialDrivetrainSim::GetState() const {
   return m_x;
 }
 
@@ -91,10 +93,10 @@ Pose2d DifferentialDrivetrainSim::GetPose() const {
 
 units::ampere_t DifferentialDrivetrainSim::GetLeftCurrentDraw() const {
   auto loadIleft =
-      m_motor.Current(units::radians_per_second_t(m_x(State::kLeftVelocity) *
-                                                  m_currentGearing /
-                                                  m_wheelRadius.to<double>()),
-                      units::volt_t(m_u(0))) *
+      m_motor.Current(
+          units::radians_per_second_t(m_x(State::kLeftVelocity) *
+                                      m_currentGearing / m_wheelRadius.value()),
+          units::volt_t(m_u(0))) *
       wpi::sgn(m_u(0));
 
   return loadIleft;
@@ -102,10 +104,10 @@ units::ampere_t DifferentialDrivetrainSim::GetLeftCurrentDraw() const {
 
 units::ampere_t DifferentialDrivetrainSim::GetRightCurrentDraw() const {
   auto loadIRight =
-      m_motor.Current(units::radians_per_second_t(m_x(State::kRightVelocity) *
-                                                  m_currentGearing /
-                                                  m_wheelRadius.to<double>()),
-                      units::volt_t(m_u(1))) *
+      m_motor.Current(
+          units::radians_per_second_t(m_x(State::kRightVelocity) *
+                                      m_currentGearing / m_wheelRadius.value()),
+          units::volt_t(m_u(1))) *
       wpi::sgn(m_u(1));
 
   return loadIRight;
@@ -115,21 +117,20 @@ units::ampere_t DifferentialDrivetrainSim::GetCurrentDraw() const {
 }
 
 void DifferentialDrivetrainSim::SetState(
-    const Eigen::Matrix<double, 7, 1>& state) {
+    const Eigen::Vector<double, 7>& state) {
   m_x = state;
 }
 
 void DifferentialDrivetrainSim::SetPose(const frc::Pose2d& pose) {
-  m_x(State::kX) = pose.X().to<double>();
-  m_x(State::kY) = pose.Y().to<double>();
-  m_x(State::kHeading) = pose.Rotation().Radians().to<double>();
+  m_x(State::kX) = pose.X().value();
+  m_x(State::kY) = pose.Y().value();
+  m_x(State::kHeading) = pose.Rotation().Radians().value();
   m_x(State::kLeftPosition) = 0;
   m_x(State::kRightPosition) = 0;
 }
 
-Eigen::Matrix<double, 7, 1> DifferentialDrivetrainSim::Dynamics(
-    const Eigen::Matrix<double, 7, 1>& x,
-    const Eigen::Matrix<double, 2, 1>& u) {
+Eigen::Vector<double, 7> DifferentialDrivetrainSim::Dynamics(
+    const Eigen::Vector<double, 7>& x, const Eigen::Vector<double, 2>& u) {
   // Because G^2 can be factored out of A, we can divide by the old ratio
   // squared and multiply by the new ratio squared to get a new drivetrain
   // model.
@@ -148,12 +149,12 @@ Eigen::Matrix<double, 7, 1> DifferentialDrivetrainSim::Dynamics(
 
   double v = (x(State::kLeftVelocity) + x(State::kRightVelocity)) / 2.0;
 
-  Eigen::Matrix<double, 7, 1> xdot;
+  Eigen::Vector<double, 7> xdot;
   xdot(0) = v * std::cos(x(State::kHeading));
   xdot(1) = v * std::sin(x(State::kHeading));
   xdot(2) =
       ((x(State::kRightVelocity) - x(State::kLeftVelocity)) / (2.0 * m_rb))
-          .to<double>();
+          .value();
   xdot.block<4, 1>(3, 0) = A * x.block<4, 1>(3, 0) + B * u;
   return xdot;
 }

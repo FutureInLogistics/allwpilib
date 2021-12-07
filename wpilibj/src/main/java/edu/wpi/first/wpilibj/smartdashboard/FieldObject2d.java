@@ -4,11 +4,11 @@
 
 package edu.wpi.first.wpilibj.smartdashboard;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.networktables.NetworkTableEntry;
-import edu.wpi.first.wpilibj.geometry.Pose2d;
-import edu.wpi.first.wpilibj.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.geometry.Translation2d;
-import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -153,7 +153,6 @@ public class FieldObject2d {
     }
   }
 
-  @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
   private synchronized void updateFromEntry() {
     if (m_entry == null) {
       return;

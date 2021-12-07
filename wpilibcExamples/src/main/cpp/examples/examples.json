@@ -52,6 +52,14 @@
     "commandversion": 2
   },
   {
+    "name":"Mechanism2d",
+    "foldername":"Mechanism2d",
+    "gradlebase":"cpp",
+    "description":"An example usage of Mechanism2d to display mechanism states on a dashboard.",
+    "tags":["Mechanism2d"],
+    "commandversion": 2
+  },
+  {
     "name": "Solenoids",
     "description": "Demonstrate controlling a single and double solenoid from Joystick buttons.",
     "tags": [
@@ -86,6 +94,19 @@
       "Complete List"
     ],
     "foldername": "ArcadeDrive",
+    "gradlebase": "cpp",
+    "commandversion": 2
+  },
+  {
+    "name": "Tank Drive",
+    "description": "An example program which demonstrates the use of Tank Drive with the DifferentialDrive class",
+    "tags": [
+      "Getting Started with C++",
+      "Robot and Motor",
+      "Joystick",
+      "Complete List"
+    ],
+    "foldername": "TankDrive",
     "gradlebase": "cpp",
     "commandversion": 2
   },
@@ -260,17 +281,6 @@
     "foldername": "GearsBot",
     "gradlebase": "cpp",
     "commandversion": 2
-  },
-  {
-    "name": "PacGoat",
-    "description": "A fully functional example CommandBased program for FRC Team 190&#39;s 2014 robot. This code can run on your computer if it supports simulation.",
-    "tags": [
-      "CommandBased Robot",
-      "Complete List"
-    ],
-    "foldername": "PacGoat",
-    "gradlebase": "cpp",
-    "commandversion": 1
   },
   {
     "name": "HAL",
@@ -632,7 +642,8 @@
       "Digital",
       "Sensors",
       "Simulation",
-      "Physics"
+      "Physics",
+      "Mechanism2d"
     ],
     "foldername": "ElevatorSimulation",
     "gradlebase": "cpp",
@@ -680,7 +691,8 @@
       "Digital",
       "Sensors",
       "Simulation",
-      "Physics"
+      "Physics",
+      "Mechanism2d"
     ],
     "foldername": "ArmSimulation",
     "gradlebase": "cpp",

@@ -38,22 +38,8 @@ Rotation2d Rotation2d::operator+(const Rotation2d& other) const {
   return RotateBy(other);
 }
 
-Rotation2d& Rotation2d::operator+=(const Rotation2d& other) {
-  double cos = Cos() * other.Cos() - Sin() * other.Sin();
-  double sin = Cos() * other.Sin() + Sin() * other.Cos();
-  m_cos = cos;
-  m_sin = sin;
-  m_value = units::radian_t(std::atan2(m_sin, m_cos));
-  return *this;
-}
-
 Rotation2d Rotation2d::operator-(const Rotation2d& other) const {
   return *this + -other;
-}
-
-Rotation2d& Rotation2d::operator-=(const Rotation2d& other) {
-  *this += -other;
-  return *this;
 }
 
 Rotation2d Rotation2d::operator-() const {
@@ -78,7 +64,7 @@ Rotation2d Rotation2d::RotateBy(const Rotation2d& other) const {
 }
 
 void frc::to_json(wpi::json& json, const Rotation2d& rotation) {
-  json = wpi::json{{"radians", rotation.Radians().to<double>()}};
+  json = wpi::json{{"radians", rotation.Radians().value()}};
 }
 
 void frc::from_json(const wpi::json& json, Rotation2d& rotation) {

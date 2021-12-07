@@ -4,70 +4,31 @@
 
 #include "glass/DataSource.h"
 
+#include <fmt/format.h>
+
 #include "glass/ContextInternal.h"
 
 using namespace glass;
 
 wpi::sig::Signal<const char*, DataSource*> DataSource::sourceCreated;
 
-DataSource::DataSource(const wpi::Twine& id) : m_id{id.str()} {
-  auto it = gContext->sources.try_emplace(m_id, this);
-  auto& srcName = it.first->getValue();
-  m_name = srcName.name.get();
-  if (!srcName.source) {
-    srcName.source = this;
-  }
+DataSource::DataSource(std::string_view id)
+    : m_id{id}, m_name{gContext->sourceNameStorage.GetString(m_id)} {
+  gContext->sources.try_emplace(m_id, this);
   sourceCreated(m_id.c_str(), this);
 }
 
-DataSource::DataSource(const wpi::Twine& id, int index)
-    : DataSource{id + wpi::Twine('[') + wpi::Twine(index) + wpi::Twine(']')} {}
+DataSource::DataSource(std::string_view id, int index)
+    : DataSource{fmt::format("{}[{}]", id, index)} {}
 
-DataSource::DataSource(const wpi::Twine& id, int index, int index2)
-    : DataSource{id + wpi::Twine('[') + wpi::Twine(index) + wpi::Twine(',') +
-                 wpi::Twine(index2) + wpi::Twine(']')} {}
+DataSource::DataSource(std::string_view id, int index, int index2)
+    : DataSource{fmt::format("{}[{},{}]", id, index, index2)} {}
 
 DataSource::~DataSource() {
   if (!gContext) {
     return;
   }
-  auto it = gContext->sources.find(m_id);
-  if (it == gContext->sources.end()) {
-    return;
-  }
-  auto& srcName = it->getValue();
-  if (srcName.source == this) {
-    srcName.source = nullptr;
-  }
-}
-
-void DataSource::SetName(const wpi::Twine& name) {
-  m_name->SetName(name);
-}
-
-const char* DataSource::GetName() const {
-  return m_name->GetName();
-}
-
-void DataSource::PushEditNameId(int index) {
-  m_name->PushEditNameId(index);
-}
-
-void DataSource::PushEditNameId(const char* name) {
-  m_name->PushEditNameId(name);
-}
-
-bool DataSource::PopupEditName(int index) {
-  return m_name->PopupEditName(index);
-}
-
-bool DataSource::PopupEditName(const char* name) {
-  return m_name->PopupEditName(name);
-}
-
-bool DataSource::InputTextName(const char* label_id,
-                               ImGuiInputTextFlags flags) {
-  return m_name->InputTextName(label_id, flags);
+  gContext->sources.erase(m_id);
 }
 
 void DataSource::LabelText(const char* label, const char* fmt, ...) const {
@@ -81,7 +42,7 @@ void DataSource::LabelText(const char* label, const char* fmt, ...) const {
 void DataSource::LabelTextV(const char* label, const char* fmt,
                             va_list args) const {
   ImGui::PushID(label);
-  ImGui::LabelTextV("##input", fmt, args);
+  ImGui::LabelTextV("##input", fmt, args);  // NOLINT
   ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
   ImGui::Selectable(label);
   ImGui::PopID();
@@ -140,16 +101,16 @@ void DataSource::EmitDrag(ImGuiDragDropFlags flags) const {
   if (ImGui::BeginDragDropSource(flags)) {
     auto self = this;
     ImGui::SetDragDropPayload("DataSource", &self, sizeof(self));  // NOLINT
-    const char* name = GetName();
+    const char* name = GetName().c_str();
     ImGui::TextUnformatted(name[0] == '\0' ? m_id.c_str() : name);
     ImGui::EndDragDropSource();
   }
 }
 
-DataSource* DataSource::Find(wpi::StringRef id) {
+DataSource* DataSource::Find(std::string_view id) {
   auto it = gContext->sources.find(id);
   if (it == gContext->sources.end()) {
     return nullptr;
   }
-  return it->getValue().source;
+  return it->getValue();
 }

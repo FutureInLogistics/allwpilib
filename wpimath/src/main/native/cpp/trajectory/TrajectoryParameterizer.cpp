@@ -28,7 +28,7 @@
 
 #include "frc/trajectory/TrajectoryParameterizer.h"
 
-#include <string>
+#include <fmt/format.h>
 
 #include "units/math.h"
 
@@ -85,7 +85,7 @@ Trajectory TrajectoryParameterizer::TimeParameterizeTrajectory(
       // Now enforce all acceleration limits.
       EnforceAccelerationLimits(reversed, constraints, &constrainedState);
 
-      if (ds.to<double>() < kEpsilon) {
+      if (ds.value() < kEpsilon) {
         break;
       }
 
@@ -141,7 +141,7 @@ Trajectory TrajectoryParameterizer::TimeParameterizeTrajectory(
       // Check all acceleration constraints with the new max velocity.
       EnforceAccelerationLimits(reversed, constraints, &constrainedState);
 
-      if (ds.to<double>() > -kEpsilon) {
+      if (ds.value() > -kEpsilon) {
         break;
       }
 
@@ -193,9 +193,9 @@ Trajectory TrajectoryParameterizer::TimeParameterizeTrajectory(
         // delta_x = v * t
         dt = ds / v;
       } else {
-        throw std::runtime_error("Something went wrong at iteration " +
-                                 std::to_string(i) +
-                                 " of time parameterization.");
+        throw std::runtime_error(fmt::format(
+            "Something went wrong at iteration {} of time parameterization.",
+            i));
       }
     }
 

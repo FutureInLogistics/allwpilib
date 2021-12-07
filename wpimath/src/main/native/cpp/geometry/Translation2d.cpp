@@ -33,19 +33,8 @@ Translation2d Translation2d::operator+(const Translation2d& other) const {
   return {X() + other.X(), Y() + other.Y()};
 }
 
-Translation2d& Translation2d::operator+=(const Translation2d& other) {
-  m_x += other.m_x;
-  m_y += other.m_y;
-  return *this;
-}
-
 Translation2d Translation2d::operator-(const Translation2d& other) const {
   return *this + -other;
-}
-
-Translation2d& Translation2d::operator-=(const Translation2d& other) {
-  *this += -other;
-  return *this;
 }
 
 Translation2d Translation2d::operator-() const {
@@ -54,12 +43,6 @@ Translation2d Translation2d::operator-() const {
 
 Translation2d Translation2d::operator*(double scalar) const {
   return {scalar * m_x, scalar * m_y};
-}
-
-Translation2d& Translation2d::operator*=(double scalar) {
-  m_x *= scalar;
-  m_y *= scalar;
-  return *this;
 }
 
 Translation2d Translation2d::operator/(double scalar) const {
@@ -75,14 +58,9 @@ bool Translation2d::operator!=(const Translation2d& other) const {
   return !operator==(other);
 }
 
-Translation2d& Translation2d::operator/=(double scalar) {
-  *this *= (1.0 / scalar);
-  return *this;
-}
-
 void frc::to_json(wpi::json& json, const Translation2d& translation) {
-  json = wpi::json{{"x", translation.X().to<double>()},
-                   {"y", translation.Y().to<double>()}};
+  json =
+      wpi::json{{"x", translation.X().value()}, {"y", translation.Y().value()}};
 }
 
 void frc::from_json(const wpi::json& json, Translation2d& translation) {
