@@ -61,6 +61,7 @@ class ExponentialFilter {
    */
   void setInitialValue(const T& v) {
     m_inital_value = v;
+    m_old_value = v; // users would expect the value to change when setting "setInitialValue". Otherwise calling Reset afterwas would be necessary.
   }
 
   T getCurrentValue() {
