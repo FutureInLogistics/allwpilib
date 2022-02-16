@@ -55,15 +55,15 @@ ENDIF("${isSystemDir}" STREQUAL "-1")
 
 # Options for building certain parts of the repo. Everything is built by default.
 option(BUILD_SHARED_LIBS "Build with shared libs (needed for JNI)" ON)
-option(WITH_JAVA "Include java and JNI in the build" ON)
+option(WITH_JAVA "Include java and JNI in the build" OFF)
 option(WITH_CSCORE "Build cscore (needs OpenCV)" ON)
 option(WITH_WPIMATH "Build wpimath" ON)
 option(WITH_WPILIB "Build hal, wpilibc/j, and myRobot (needs OpenCV)" ON)
 option(WITH_OLD_COMMANDS "Build old commands" OFF)
 option(WITH_EXAMPLES "Build examples" OFF)
-option(WITH_TESTS "Build unit tests (requires internet connection)" ON)
-option(WITH_GUI "Build GUI items" ON)
-option(WITH_SIMULATION_MODULES "Build simulation modules" ON)
+option(WITH_TESTS "Build unit tests (requires internet connection)" OFF)
+option(WITH_GUI "Build GUI items" OFF)
+option(WITH_SIMULATION_MODULES "Build simulation modules" OFF)
 
 # Options for external HAL.
 option(WITH_EXTERNAL_HAL "Use a separately built HAL" OFF)
